@@ -974,8 +974,9 @@ async findPassword(){
   });
 
   // 교사 역할에만 관리자 메뉴 노출 (데모 테스트하려면 if문 제거)
-  if ((this.userData?.role||'student') === 'teacher') {
-    menus.teacher.forEach(menu => {
+  if ((this.userData?.role||'student') === 'teacher' || this.isAdminUnlocked) {
+  menus.teacher.forEach(menu => {
+    // ...
       const el = document.createElement('div');
       el.className = 'menu-item';
       el.dataset.target = menu.target;
@@ -2384,6 +2385,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
