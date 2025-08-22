@@ -839,7 +839,7 @@
     /************************************
      *  데모 모드 감지 & 간단 파이어스토어 모킹
      ************************************/
-    const FORCE_DEMO = true; // 실 서비스 연결 시 false로 바꾸세요.
+    const FORCE_DEMO = false; // 실 서비스 연결 시 false로 바꾸세요.
     const isDemoMode = FORCE_DEMO || !firebaseConfig || !firebaseConfig.projectId || /YOUR_PROJECT_ID/i.test(firebaseConfig.projectId||"");
 
     const deepClone = obj => JSON.parse(JSON.stringify(obj));
@@ -2706,3 +2706,4 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
