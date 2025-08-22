@@ -703,6 +703,110 @@ function pickSeededN(pool, n, rng){
     /**********************
      *  메인 앱
      **********************/
+    /* ========= 어휘기반 대형 문항 풀 생성기 =========
+ * - vocabData(위에서 큰 목록으로 교체해두세요)를 모두 사용
+ * - 각 단어 정의 → 객관식(정답 1 + 오답 3) 자동 생성
+ * - 단어 길이/균등 분배로 L/M/H 버킷 구성
+ * - 읽기 문항도 난이도별로 다수 포함
+ * ============================================ */
+
+const questionBank = (() => {
+  const rng = makeRNG(0xB00K2025);
+
+  const words = Object.keys(vocabData);
+  const defs  = vocabData;
+
+  // 보조: 시드 고정 셔플
+  function shuffle(arr){ return seededShuffle(arr, rng); }
+
+  // 보조: except를 제외하고 n개 선택
+  function pickOthers(except, n){
+    const pool = words.filter(w => w !== except);
+    return shuffle(pool).slice(0, n);
+  }
+
+  // 어휘 문항 생성: "다음 뜻에 해당하는 단어는?"
+  function makeVocabItem(word){
+    const def = defs[word];
+    if(!def) return null;
+    const wrong = pickOthers(word, 3);
+    const options = shuffle([word, ...wrong]);
+    return {
+      type:'vocab',
+      q: `다음 뜻에 가장 알맞은 단어는? “${def}”`,
+      opts: options,
+      ans: options.indexOf(word)
+    };
+  }
+
+  // 전체 어휘 -> 객관식
+  const allVocabItems = words
+    .map(makeVocabItem)
+    .filter(Boolean);
+
+  // 난이도 분배(단어 길이 + 균등 분배)
+  const sortedByLen = allVocabItems
+    .map(it => ({ it, len: (it.opts[it.ans]||'').length }))
+    .sort((a,b)=> a.len - b.len)
+    .map(x=>x.it);
+
+  const L_v = [], M_v = [], H_v = [];
+  sortedByLen.forEach((it, i) => {
+    if(i % 3 === 0) L_v.push(it);
+    else if(i % 3 === 1) M_v.push(it);
+    else H_v.push(it);
+  });
+
+  // -----------------------------
+  // 난이도별 읽기 문항 (여러 개)
+  // -----------------------------
+  const READ_L = [
+    {type:'read', q:'문장 “고양이가 물을 마신다”에서 주어는?', opts:['고양이','물을','마신다','없다'], ans:0},
+    {type:'read', q:'문장 “나는 사과를 먹었다”에서 목적어는?', opts:['나는','사과','먹었다','에서'], ans:1},
+    {type:'read', q:'“봄이 왔다”의 서술어는?', opts:['봄이','왔다','봄','이'], ans:1},
+    {type:'read', q:'다음 중 문장 성분이 아닌 것은?', opts:['주어','목적어','부사어','속담'], ans:3},
+    {type:'read', q:'문장 “비가 내린다”의 시제는?', opts:['현재','과거','미래','불명'], ans:0},
+    {type:'read', q:'“학생들이 운동장에서 뛴다.”에서 장소를 나타내는 말은?', opts:['학생들이','운동장에서','뛴다','없다'], ans:1},
+  ];
+
+  const READ_M = [
+    {type:'read', q:'글의 중심 생각을 파악하려면 가장 먼저 볼 만한 것은?', opts:['제목과 첫 문단','마지막 문장의 조사','삽화만','글자 수'], ans:0},
+    {type:'read', q:'다음 중 “원인-결과” 관계를 잘 보여 주는 말은?', opts:['그래서','하지만','그러나','또는'], ans:0},
+    {type:'read', q:'설명문에서 흔히 사용하는 방법이 아닌 것은?', opts:['비유','정의','분류','예시'], ans:0},
+    {type:'read', q:'다음 중 중심문장이 있을 가능성이 큰 위치는?', opts:['첫 문장/끝 문장','아무 곳','제목만','부제만'], ans:0},
+    {type:'read', q:'주장하는 글에서 주장의 타당성을 높이는 재료는?', opts:['근거와 자료','분위기 음악','알록달록한 색','긴 문장'], ans:0},
+    {type:'read', q:'다음 중 설명문의 특징으로 알맞은 것은?', opts:['객관적 정보 제시','감정을 호소','인물의 대화 중심','갈등 전개'], ans:0},
+  ];
+
+  const READ_H = [
+    {type:'read', q:'다음 글의 주제로 적절한 것은? (주제/세부 정보 구분 문제)', opts:['글 전체의 핵심 생각','예시 하나','부연 설명','부적절한 추측'], ans:0},
+    {type:'read', q:'논설문에서 “반론 제기”의 목적은?', opts:['주장의 설득력 강화','글의 분량 늘리기','독자 혼란 주기','주제를 바꾸기'], ans:0},
+    {type:'read', q:'다음 중 내용 일치하지 않는 것을 고르시오(세부 사실 정확성).', opts:['일치하지 않음 선택','전부 일치','모두 틀림','판단 불가'], ans:0},
+    {type:'read', q:'글의 관점/시점을 파악하는 이유로 가장 적절한 것은?', opts:['해석의 기준 제공','문장 수 파악','문자 모양 파악','그림 찾기'], ans:0},
+    {type:'read', q:'다음 글의 제목으로 가장 알맞은 것은?(요지/핵심 묻기)', opts:['핵심을 압축한 문장','예시 한 줄','문장 중간 단어','연결어만'], ans:0},
+    {type:'read', q:'설명 방식 중 “비교/대조”의 효과로 적절한 것은?', opts:['차이/공통점이 선명','문장이 늘어남','감정 호소 증가','주제 변경'], ans:0},
+  ];
+
+  // CORE 풀: 전 난이도 섞어 넉넉히 구성(최소 수십 개)
+  const CORE = shuffle([
+    ...L_v.slice(0, 60),
+    ...M_v.slice(0, 60),
+    ...H_v.slice(0, 60)
+  ]);
+
+  // 난이도별 풀(어휘 + 읽기)
+  const poolL = shuffle([...L_v, ...READ_L]);
+  const poolM = shuffle([...M_v, ...READ_M]);
+  const poolH = shuffle([...H_v, ...READ_H]);
+
+  return {
+    core: CORE,   // CORE 단계에서 필요 수만큼 뽑아 씀
+    L: poolL,
+    M: poolM,
+    H: poolH
+  };
+})();
+
     const App = {
       currentUser:null, userData:null, allVocab:{}, allBooks:[],
       learnedWordsInSession:new Set(), currentBookId:null,
@@ -1101,6 +1205,7 @@ gradeBand(grade){
       
 startAdaptiveTest(grade, version=1){
   // 레거시 버튼 안전 숨김
+  this.currentTestVersion = version;
 const legacyFinish = document.getElementById('finish-test-btn');
 if (legacyFinish) legacyFinish.style.display = 'none';
   const seed = 0x6A6A0000 + (version|0);
@@ -1157,6 +1262,65 @@ const btnWrap = document.getElementById('test-bottom-actions');
 btnWrap.innerHTML = `<button id="submit-stage-btn">다음 단계로</button>`;
 document.getElementById('submit-stage-btn').onclick = ()=> this._submitStage();
 },
+_finalizeMst(){
+    const { version, scoreRaw, scoreAdj, answers } = this.currentTest;
+    const total = Math.round(100 + scoreRaw + scoreAdj);
+
+    // 기존 renderTestResultDetails()가 기대하는 형태로 변환
+    const normalizedAnswers = answers.map(a => {
+      const opts = a.it?.opts || [];
+      const userText = (typeof a.ui === 'number') ? opts[a.ui] : '(미응답)';
+      return {
+        question: a.q,
+        options: opts,
+        userAnswer: userText,
+        isCorrect: !!a.ok,
+        correctAnswer: opts[a.it.ans]
+      };
+    });
+
+    const resultData = {
+      score: total,
+      completedAt: FV.serverTimestamp(),
+      answers: normalizedAnswers,
+      wrongWords: []
+    };
+
+    this.showLoading(true);
+    (async ()=>{
+      try{
+        const key = `v${version}`;
+        if (isDemoMode){
+          const u = DemoStore.users[this.currentUser.uid];
+          u.testResults = u.testResults || {};
+          u.testResults[key] = { ...resultData, completedAt: new Date() };
+          u.points = (u.points||0) + 50;
+          u.rewardLog = u.rewardLog || [];
+          u.rewardLog.push({ at:new Date(), reason:'온독 검사 완료', amount:50 });
+          u.lastActivity = new Date();
+        } else {
+          await db.collection('users').doc(this.currentUser.uid).update({
+            [`testResults.${key}`]: resultData,
+            points: FV.increment(50),
+            lastActivity: FV.serverTimestamp(),
+            rewardLog: FV.arrayUnion({ at:new Date().toISOString(), reason:'온독 검사 완료', amount:50 })
+          });
+        }
+
+        await this.fetchUserData(this.currentUser.uid);
+        this.updateRewardsDisplay();
+        this.renderTestResultDetails(resultData);
+        this.drawTestHistoryChart();
+        this.showView('test-result-view');
+        this.showAlert('검사를 완료하여 50점을 획득했습니다!');
+      }catch(e){
+        console.error(e);
+        this.showAlert('결과 저장에 실패했습니다.');
+      }finally{
+        this.showLoading(false);
+      }
+    })();
+  },
 _submitStage(){
   const items = this.currentTest.currentItems || [];
   let correct = 0;
@@ -1169,7 +1333,7 @@ _submitStage(){
     const ui = checked ? parseInt(checked.value,10) : -1;
     const ok = (ui === it.ans);
     if(ok) correct++;
-    this.currentTest.answers.push({q:it.q, ok, it});
+    this.currentTest.answers.push({ q: it.q, ok, it, ui });
   });
   if(!allAnswered){ this.showAlert('모든 문항에 응답해주세요.'); return; }
 
@@ -2534,6 +2698,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
