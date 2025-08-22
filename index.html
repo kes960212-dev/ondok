@@ -989,14 +989,27 @@ tryAdminLogin(){
   const pwd = prompt('관리자 비밀번호를 입력하세요:');
   if (pwd === 'rla48625@') {
     this.isAdminUnlocked = true;
++   // 역할 승격
++   if (this.userData) {
++     this.userData.role = 'teacher';
++     if (isDemoMode) {
++       DemoStore.users[this.currentUser.uid].role = 'teacher';
++     } else {
++       db.collection('users').doc(this.currentUser.uid).update({ role: 'teacher' }).catch(()=>{});
++     }
++   }
+
     alert('관리자 모드로 로그인되었습니다.');
-    // 관리자 메뉴(타일)도 보이고, 바로 관리자 페이지로 이동
     this.renderMainMenu();
-    this.renderAdminDashboard().then(()=> this.showView('admin-dashboard-view'));
+-   this.renderAdminDashboard().then(()=> this.showView('admin-dashboard-view'));
++   (async () => {
++     await this.renderAdminDashboard();
++     this.showView('admin-dashboard-view');
++   })();
   } else {
     alert('비밀번호가 틀렸습니다.');
   }
-},
+}
 
 
       async handleMenuClick(viewId){
@@ -2371,6 +2384,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
