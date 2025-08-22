@@ -1068,27 +1068,34 @@ tryAdminLogin(){
 
       /************** 테스트 **************/
       renderTestSelection(){
+  // ✅ HTML의 실제 id와 맞춰 주세요.
   const grid = document.getElementById('test-selection-grid');
   grid.innerHTML = '';
 
-  const TOTAL = 10; // 버전 개수
-  for (let i=1; i<=TOTAL; i++){
+  const TOTAL = 10;
+  for (let i = 1; i <= TOTAL; i++) {
+    const version = i;
+
     const card = document.createElement('div');
     card.className = 'test-version-card';
-card.dataset.version = v;
+    card.dataset.version = String(version);
+
     card.innerHTML = `
-      <h3>적응형 온독지수 (6학년) — 버전 ${i}</h3>
-      <button type="button" class="button" data-version="${v}">검사 시작</button>
+      <h3>적응형 온독지수 (6학년) — 버전 ${version}</h3>
+      <button type="button"
+              class="button"
+              data-version="${version}">검사 시작</button>
       <div class="test-score-display">미응시</div>
     `;
-    const btn = card.querySelector('button.button');
-  btn.addEventListener('click', (e) => {
-    const version = Number(e.currentTarget.dataset.version);
-    this.startAdaptiveTest(6, version); // 6학년 기준
-  });
 
-  grid.appendChild(card);
-}
+    grid.appendChild(card);
+  }
+},
+  gradeBand(grade){
+  // RATE_TABLE 키가 'G6'이라면:
+  return `G${grade}`;
+  // 만약 RATE_TABLE 키가 그냥 '6'이면 위 한 줄 대신:
+  // return String(grade);
 },
 function gradeBand(grade){
   // RATE_TABLE 키가 'G6' 처럼 G+학년이면:
@@ -1106,7 +1113,7 @@ if (legacyFinish) legacyFinish.style.display = 'none';
   this.currentTest = {
     grade,
     version,
-    band: gradeBand(grade),
+    band: this.gradeBand(grade),
     stage: 'CORE',
     route: [],
     answers: [],
@@ -2533,6 +2540,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
