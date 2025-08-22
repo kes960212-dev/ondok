@@ -675,6 +675,30 @@ signInWithEmailAndPassword(email, password){
   </script>
 
   <script>
+    // ===== 시드 고정 RNG & 셔플 유틸 =====
+function makeRNG(seed){
+  let s = seed >>> 0;
+  return function(){
+    s ^= (s << 13); s ^= (s >>> 17); s ^= (s << 5);
+    return ((s >>> 0) / 4294967296);
+  };
+}
+function seededShuffle(arr, rng){
+  const a = arr.slice();
+  for(let i=a.length-1; i>0; i--){
+    const j = Math.floor(rng()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function pickSeededN(pool, n, rng){
+  if(!pool.length) return [];
+  let out = [];
+  while(out.length < n){
+    out = out.concat(seededShuffle(pool, rng));
+  }
+  return out.slice(0, n);
+}
     /**********************
      *  메인 앱
      **********************/
@@ -826,8 +850,9 @@ if (button.classList.contains('dashboard-tab')) {
               this.showView(viewTarget);
             }
             const version = button?.dataset?.version;
-            if(version) this.startTest(parseInt(version));
-          }
+if (version) {
+  this.startAdaptiveTest(6, parseInt(version, 10)); // 6학년, 선택 버전
+}
           else if(menuItem) this.handleMenuClick(menuItem.dataset.target);
           else if(popularItem) this.showClassBookDetail(popularItem.dataset.bookId);
          else if(bookIconCard) this.showClassBookDetail(bookIconCard.dataset.bookId);
@@ -1026,38 +1051,127 @@ tryAdminLogin(){
 },
 
       /************** 테스트 **************/
-      renderTestSelection() {
+      renderTestSelection(){
   const grid = document.getElementById('test-selection-grid');
   grid.innerHTML = '';
 
-  // ✅ 총 10개 버전 고정 생성
-  const TOTAL_VERSIONS = 10;
-  const userResults = this.userData.testResults || {};
-
-  for (let i = 1; i <= TOTAL_VERSIONS; i++) {
+  const TOTAL = 10; // 버전 개수
+  for (let i=1; i<=TOTAL; i++){
     const card = document.createElement('div');
     card.className = 'test-version-card';
-
-    const result = userResults[`v${i}`];
-    const alreadyTaken = !!result;
-
-    const buttonHtml = alreadyTaken
-      ? `<button disabled>검사완료</button>`
-      : `<button data-version="${i}">검사 시작</button>`;
-
-    const scoreHtml = alreadyTaken
-      ? `<div class="test-score-display">획득 점수: ${result.score}</div>`
-      : `<div class="test-score-display">미응시</div>`;
-
     card.innerHTML = `
-      <h3>검사 버전 ${i}</h3>
-      ${buttonHtml}
-      ${scoreHtml}
+      <h3>적응형 온독지수 (6학년) — 버전 ${i}</h3>
+      <button data-version="${i}">검사 시작</button>
+      <div class="test-score-display">미응시</div>
     `;
     grid.appendChild(card);
   }
+}
+,
+startAdaptiveTest(grade, version=1){
+  const seed = 0x6A6A0000 + (version|0);
+  this.currentTest = {
+    grade,
+    version,
+    band: gradeBand(grade),
+    stage: 'CORE',
+    route: [],
+    answers: [],
+    scoreRaw: 0,
+    scoreAdj: 0,
+    rng: makeRNG(seed)
+  };
+  this._renderMstStage('CORE');
+  this.showView('test-view');
+  document.getElementById('test-title').innerText =
+    `온독지수 적응형 검사 (6학년 · 버전 ${version})`;
 },
+_renderMstStage(which){
+  const container = document.getElementById('test-question-container');
+  container.innerHTML = '';
 
+  const rng = this.currentTest?.rng || Math.random;
+  let items = [];
+  if(which==='CORE'){
+    const need = MST_CFG.core.v + MST_CFG.core.r;
+    items = pickSeededN(questionBank.core, need, rng);
+  }else{
+    const pool = questionBank[which] || [];
+    const vocab = pool.filter(x=>x.type==='vocab');
+    const read  = pool.filter(x=>x.type==='read');
+    items = [
+      ...pickSeededN(vocab, MST_CFG.stage.v, rng),
+      ...pickSeededN(read , MST_CFG.stage.r, rng)
+    ];
+  }
+  this.currentTest.currentItems = items;
+
+  items.forEach((it, idx)=>{
+    const qDiv = document.createElement('div');
+    qDiv.style.marginBottom='12px';
+    qDiv.innerHTML =
+      `<p><strong>문제 ${idx+1}.</strong> ${it.q}</p>`+
+      `<div>`+it.opts.map((opt,i)=>(
+        `<label style="display:block;margin:5px;">
+           <input type="radio" name="q${idx}" value="${i}"> ${opt}
+         </label>`
+      )).join('')+`</div>`;
+    container.appendChild(qDiv);
+  });
+
+  const btnWrap = container.parentElement.querySelector('div[style*="text-align:center"]');
+  btnWrap.innerHTML = `<button id="submit-stage-btn">다음 단계로</button>`;
+  document.getElementById('submit-stage-btn').onclick = ()=> this._submitStage();
+},
+_submitStage(){
+  const items = this.currentTest.currentItems || [];
+  let correct = 0;
+  let allAnswered = true;
+  const per = MST_CFG.itemPoint;
+
+  items.forEach((it, idx)=>{
+    const checked = document.querySelector(`input[name="q${idx}"]:checked`);
+    if(!checked) allAnswered = false;
+    const ui = checked ? parseInt(checked.value,10) : -1;
+    const ok = (ui === it.ans);
+    if(ok) correct++;
+    this.currentTest.answers.push({q:it.q, ok, it});
+  });
+  if(!allAnswered){ this.showAlert('모든 문항에 응답해주세요.'); return; }
+
+  const raw = correct * per;
+  this.currentTest.scoreRaw += raw;
+
+  if(this.currentTest.stage==='CORE'){
+    const acc = correct / items.length;
+    let next = 'M';
+    if(acc >= MST_CFG.thresholds.hi) next = 'H';
+    else if(acc <= MST_CFG.thresholds.lo) next = 'L';
+    this.currentTest.route.push(next);
+    this.currentTest.stage = 'S2';
+    this._renderMstStage(next);
+    return;
+  }
+
+  const lastDiff = this.currentTest.route[this.currentTest.route.length-1];
+  const {M,H,L} = RATE_TABLE[this.currentTest.band];
+  const diffRate = lastDiff==='H'?H : lastDiff==='L'?L : M;
+  const bonus = (items.length * MST_CFG.itemPoint) * (M - diffRate);
+  this.currentTest.scoreAdj += (raw + bonus);
+
+  if(this.currentTest.stage==='S2'){
+    const acc = correct / items.length;
+    let next = 'M';
+    if(acc >= MST_CFG.thresholds.hi) next = 'H';
+    else if(acc <= MST_CFG.thresholds.lo) next = 'L';
+    this.currentTest.route.push(next);
+    this.currentTest.stage = 'S3';
+    this._renderMstStage(next);
+    return;
+  }
+
+  this._finalizeMst();
+},
 
       startTest(version){
         this.currentTestVersion = version;
@@ -2385,6 +2499,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
