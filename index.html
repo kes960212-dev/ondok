@@ -1081,10 +1081,23 @@ card.dataset.version = v;
       <button type="button" class="button" data-version="${v}">검사 시작</button>
       <div class="test-score-display">미응시</div>
     `;
-    grid.appendChild(card);
-  }
+    const btn = card.querySelector('button.button');
+  btn.addEventListener('click', (e) => {
+    const version = Number(e.currentTarget.dataset.version);
+    this.startAdaptiveTest(6, version); // 6학년 기준
+  });
+
+  grid.appendChild(card);
 }
-,
+},
+function gradeBand(grade){
+  // RATE_TABLE 키가 'G6' 처럼 G+학년이면:
+  return `G${grade}`;
+
+  // 만약 RATE_TABLE 키가 그냥 '6'이면 위 한 줄 대신:
+  // return String(grade);
+}
+      
 startAdaptiveTest(grade, version=1){
   // 레거시 버튼 안전 숨김
 const legacyFinish = document.getElementById('finish-test-btn');
@@ -2520,6 +2533,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
