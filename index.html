@@ -1091,19 +1091,13 @@ tryAdminLogin(){
     grid.appendChild(card);
   }
 },
-  gradeBand(grade){
+      
+gradeBand(grade){
   // RATE_TABLE 키가 'G6'이라면:
   return `G${grade}`;
-  // 만약 RATE_TABLE 키가 그냥 '6'이면 위 한 줄 대신:
+  // 만약 RATE_TABLE 키가 그냥 '6'이면:
   // return String(grade);
 },
-function gradeBand(grade){
-  // RATE_TABLE 키가 'G6' 처럼 G+학년이면:
-  return `G${grade}`;
-
-  // 만약 RATE_TABLE 키가 그냥 '6'이면 위 한 줄 대신:
-  // return String(grade);
-}
       
 startAdaptiveTest(grade, version=1){
   // 레거시 버튼 안전 숨김
@@ -2540,6 +2534,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
