@@ -853,10 +853,13 @@ function pickSeededN(pool, n, rng){
         this.showView(viewTarget);
       }
 
-      const version = button?.dataset?.version;
-      if (version) {
-        this.startAdaptiveTest(6, parseInt(version, 10));
-      }
+      const version = button?.dataset?.version
+              || button.closest('.test-version-card')?.dataset?.version; // 카드에만 data-version 있는 경우 대비
+if (version) {
+  this.startAdaptiveTest(6, parseInt(version, 10));
+  this.showView('test-view');
+}
+
     } else if (menuItem) {
       this.handleMenuClick(menuItem.dataset.target);
     } else if (popularItem) {
@@ -1072,9 +1075,10 @@ tryAdminLogin(){
   for (let i=1; i<=TOTAL; i++){
     const card = document.createElement('div');
     card.className = 'test-version-card';
+card.dataset.version = v;
     card.innerHTML = `
       <h3>적응형 온독지수 (6학년) — 버전 ${i}</h3>
-      <button data-version="${i}">검사 시작</button>
+      <button type="button" class="button" data-version="${v}">검사 시작</button>
       <div class="test-score-display">미응시</div>
     `;
     grid.appendChild(card);
@@ -2516,6 +2520,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
