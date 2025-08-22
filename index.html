@@ -60,6 +60,7 @@
     #my-dashboard-view #unknown-words-list{display:flex;flex-wrap:wrap;gap:6px}
     #my-dashboard-view #unknown-words-list span{background-color:var(--accent-color);padding:5px 10px;border-radius:5px;cursor:pointer}
     #finish-test-btn,#add-to-library-btn,#submit-review-btn{background-color:var(--secondary-color)}
+    #finish-test-btn { display: none !important; }
     #students-table{width:100%;border-collapse:collapse;margin-top:20px;font-size:.9em}
     #students-table th,#students-table td{border:1px solid var(--border-color);padding:12px;text-align:left}
     #students-table th{background-color:var(--primary-color);color:#fff}
@@ -159,9 +160,9 @@
     <button class="back-button" data-target="test-selection-view">버전 선택으로</button>
     <h2 id="test-title"></h2>
     <div id="test-question-container"></div>
-    <div style="text-align:center;margin-top:14px;">
-      <button id="finish-test-btn">결과 확인하기</button>
-    </div>
+    <div id="test-bottom-actions" style="text-align:center;margin-top:14px;">
+  <button id="finish-test-btn">결과 확인하기</button>
+</div>
   </div>
 
   <div id="test-result-view" class="view">
@@ -1069,6 +1070,9 @@ tryAdminLogin(){
 }
 ,
 startAdaptiveTest(grade, version=1){
+  // 레거시 버튼 안전 숨김
+const legacyFinish = document.getElementById('finish-test-btn');
+if (legacyFinish) legacyFinish.style.display = 'none';
   const seed = 0x6A6A0000 + (version|0);
   this.currentTest = {
     grade,
@@ -1119,9 +1123,9 @@ _renderMstStage(which){
     container.appendChild(qDiv);
   });
 
-  const btnWrap = container.parentElement.querySelector('div[style*="text-align:center"]');
-  btnWrap.innerHTML = `<button id="submit-stage-btn">다음 단계로</button>`;
-  document.getElementById('submit-stage-btn').onclick = ()=> this._submitStage();
+const btnWrap = document.getElementById('test-bottom-actions');
+btnWrap.innerHTML = `<button id="submit-stage-btn">다음 단계로</button>`;
+document.getElementById('submit-stage-btn').onclick = ()=> this._submitStage();
 },
 _submitStage(){
   const items = this.currentTest.currentItems || [];
@@ -1208,7 +1212,8 @@ _submitStage(){
       },
 
       async finishTest(){
-  // 라디오 응답 수집
+  // MST 경로면 레거시 데이터가 없으므로 바로 종료
+  if (!Array.isArray(this.currentTestQuestions) || this.currentTestQuestions.length === 0) return;
   let score = 0;
   let allAnswered = true;
   const detailed = [];
@@ -2499,6 +2504,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
