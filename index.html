@@ -806,77 +806,84 @@ function pickSeededN(pool, n, rng){
       },  /* ←←← 여기 콤마가 핵심! (이전 버전 오류의 원인) */
 
       bindEvents(){
-        document.body.addEventListener('click', e=>{
-          const target = e.target;
-          const button = target.closest('button');
-          const menuItem = target.closest('.menu-item');
-          const popularItem = target.closest('.popular-book-item');
-          const vocabCard = target.closest('.vocab-card');
-          const bookIconCard = target.closest('.book-icon-card');
-          const recommendCard = target.closest('.recommend-card');
+  document.body.addEventListener('click', e=>{
+    const target = e.target;
+    const button = target.closest('button');
+    const menuItem = target.closest('.menu-item');
+    const popularItem = target.closest('.popular-book-item');
+    const vocabCard = target.closest('.vocab-card');
+    const bookIconCard = target.closest('.book-icon-card');
+    const recommendCard = target.closest('.recommend-card');
 
-          if(button){
-            e.preventDefault();
-            switch(button.id){
-              case 'admin-login-btn': this.tryAdminLogin(); break;
-              case 'login-btn': this.login(); break;
-              case 'show-signup-btn': this.showView('signup-view'); break;
-              case 'signup-btn': this.signUp(); break;
-              case 'forgot-pw-btn': this.openPasswordModal(); break;
-case 'pw-close-btn': document.getElementById('pw-modal').style.display='none'; break;
-case 'pw-search-btn': this.findPassword(); break;
-              case 'back-to-login-btn': this.showView('login-view'); break;
-              case 'logout-button': auth.signOut(); break;
-              case 'finish-test-btn': this.finishTest(); break;
-              case 'add-to-library-btn': this.addCurrentBookToLibrary(); break;
-              case 'submit-review-btn': this.submitReview(); break;
-              case 'show-learned-btn': this.showLearnedWords(); break;
-              case 'show-learn-history-btn': this.openLearnHistoryModal(); break;
-              case 'close-modal-btn': this.closeAlert(); break;
-              case 'close-learn-history-btn': document.getElementById('learn-history-modal').style.display='none'; break;
-              case 'cancel-review-btn': document.getElementById('review-modal').style.display='none'; break;
-              case 'start-reading-btn': this.confirmStartReadingFromDetail(); break;
-              case 'class-detail-start': this.confirmStartReadingFromClassPanel(); break;
-            }
-if (button.classList.contains('dashboard-tab')) {
-  const tab = button.dataset.tab;
-  document.querySelectorAll('.dashboard-tab').forEach(b => b.classList.remove('active'));
-  button.classList.add('active');
-  document.getElementById('dashboard-tab-summary').style.display = (tab === 'summary') ? 'block' : 'none';
-  document.getElementById('dashboard-tab-read').style.display    = (tab === 'read')    ? 'block' : 'none';
-  if (tab === 'read') this.renderMyReadBooks(); // 목록 채우기
+    if (button) {
+      e.preventDefault();
+      switch (button.id) {
+        case 'admin-login-btn': this.tryAdminLogin(); break;
+        case 'login-btn': this.login(); break;
+        case 'show-signup-btn': this.showView('signup-view'); break;
+        case 'signup-btn': this.signUp(); break;
+        case 'forgot-pw-btn': this.openPasswordModal(); break;
+        case 'pw-close-btn': document.getElementById('pw-modal').style.display='none'; break;
+        case 'pw-search-btn': this.findPassword(); break;
+        case 'back-to-login-btn': this.showView('login-view'); break;
+        case 'logout-button': auth.signOut(); break;
+        case 'finish-test-btn': this.finishTest(); break;
+        case 'add-to-library-btn': this.addCurrentBookToLibrary(); break;
+        case 'submit-review-btn': this.submitReview(); break;
+        case 'show-learned-btn': this.showLearnedWords(); break;
+        case 'show-learn-history-btn': this.openLearnHistoryModal(); break;
+        case 'close-modal-btn': this.closeAlert(); break;
+        case 'close-learn-history-btn': document.getElementById('learn-history-modal').style.display='none'; break;
+        case 'cancel-review-btn': document.getElementById('review-modal').style.display='none'; break;
+        case 'start-reading-btn': this.confirmStartReadingFromDetail(); break;
+        case 'class-detail-start': this.confirmStartReadingFromClassPanel(); break;
+      }
+
+      if (button.classList.contains('dashboard-tab')) {
+        const tab = button.dataset.tab;
+        document.querySelectorAll('.dashboard-tab').forEach(b => b.classList.remove('active'));
+        button.classList.add('active');
+        document.getElementById('dashboard-tab-summary').style.display = (tab === 'summary') ? 'block' : 'none';
+        document.getElementById('dashboard-tab-read').style.display    = (tab === 'read')    ? 'block' : 'none';
+        if (tab === 'read') this.renderMyReadBooks();
+      }
+
+      if (button.classList.contains('back-button')) {
+        const viewTarget = button.dataset.target || 'main-menu-view';
+        this.showView(viewTarget);
+      }
+
+      const version = button?.dataset?.version;
+      if (version) {
+        this.startAdaptiveTest(6, parseInt(version, 10));
+      }
+    } else if (menuItem) {
+      this.handleMenuClick(menuItem.dataset.target);
+    } else if (popularItem) {
+      this.showClassBookDetail(popularItem.dataset.bookId);
+    } else if (bookIconCard) {
+      this.showClassBookDetail(bookIconCard.dataset.bookId);
+    } else if (recommendCard) {
+      this.showClassBookDetail(recommendCard.dataset.bookId);
+    } else if (vocabCard) {
+      const inner = vocabCard.querySelector('.vocab-card-inner');
+      if (!inner) return;
+      inner.classList.toggle('flipped');
+      const word = inner.querySelector('.vocab-card-front').innerText.trim();
+      const definition = inner.querySelector('.vocab-card-back').innerText.trim();
+      const isTrackable = ['vocab-grid-full','book-vocab-grid'].includes(vocabCard.parentElement.id);
+      if (inner.classList.contains('flipped')) {
+        if (isTrackable) this.trackWord(word);
+        this.showEnlargedVocab(word, definition);
+      }
+    }
+  }); 
+
+  document.getElementById('vocab-enlarge-modal').addEventListener('click', ()=>{
+    document.getElementById('vocab-enlarge-modal').style.display='none';
+  });
 }
-            if(button && button.classList.contains('back-button')){
-              const viewTarget = button.dataset.target || 'main-menu-view';
-              this.showView(viewTarget);
-            }
-            const version = button?.dataset?.version;
-if (version) {
-  this.startAdaptiveTest(6, parseInt(version, 10)); // 6학년, 선택 버전
-}
-          else if(menuItem) this.handleMenuClick(menuItem.dataset.target);
-          else if(popularItem) this.showClassBookDetail(popularItem.dataset.bookId);
-         else if(bookIconCard) this.showClassBookDetail(bookIconCard.dataset.bookId);
-         else if(recommendCard) this.showClassBookDetail(recommendCard.dataset.bookId);
 
-          else if(vocabCard){
-            const inner = vocabCard.querySelector('.vocab-card-inner');
-            if(!inner) return;
-            inner.classList.toggle('flipped');
-            const word = inner.querySelector('.vocab-card-front').innerText.trim();
-            const definition = inner.querySelector('.vocab-card-back').innerText.trim();
-            const isTrackable = ['vocab-grid-full','book-vocab-grid'].includes(vocabCard.parentElement.id);
-            if(inner.classList.contains('flipped')){
-              if(isTrackable) this.trackWord(word);
-              this.showEnlargedVocab(word,definition);
-            }
-          }
-        });
-
-        document.getElementById('vocab-enlarge-modal').addEventListener('click', ()=>{
-          document.getElementById('vocab-enlarge-modal').style.display='none';
-        });
-      },
 
       showAlert(msg){ document.getElementById('alert-message').innerText = msg; document.getElementById('alert-modal').style.display='flex'; },
       closeAlert(){ document.getElementById('alert-modal').style.display='none'; },
@@ -2509,6 +2516,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
