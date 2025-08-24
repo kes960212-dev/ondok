@@ -1193,24 +1193,29 @@ tryAdminLogin(){
 
       /************** 테스트 **************/
       renderTestSelection(){
-  // ✅ HTML의 실제 id와 맞춰 주세요.
   const grid = document.getElementById('test-selection-grid');
   grid.innerHTML = '';
 
   const TOTAL = 10;
   for (let i = 1; i <= TOTAL; i++) {
     const version = i;
+    const key = `v${version}`;
+    const taken = this.userData?.testResults?.[key];
 
     const card = document.createElement('div');
     card.className = 'test-version-card';
     card.dataset.version = String(version);
 
+    const statusHtml = taken
+      ? `<div class="test-score-display" style="color:var(--secondary-color);">
+           검사 완료 · ${taken.score}점
+         </div>`
+      : `<div class="test-score-display">미응시</div>`;
+
     card.innerHTML = `
       <h3>적응형 온독지수 (6학년) — 버전 ${version}</h3>
-      <button type="button"
-              class="button"
-              data-version="${version}">검사 시작</button>
-      <div class="test-score-display">미응시</div>
+      <button type="button" class="button" data-version="${version}">검사 시작</button>
+      ${statusHtml}
     `;
 
     grid.appendChild(card);
@@ -1284,66 +1289,91 @@ btnWrap.innerHTML = `<button id="submit-stage-btn">다음 단계로</button>`;
 document.getElementById('submit-stage-btn').onclick = ()=> this._submitStage();
 },
 _finalizeMst(){
-    const { version, scoreRaw, scoreAdj, answers } = this.currentTest;
-const maxRaw = (answers?.length || 0) * MST_CFG.itemPoint; // 총 문항 점수(예: 12*10=120)
-const points = Math.max(0, Math.min(maxRaw, scoreRaw + scoreAdj)); // 0~maxRaw로 클램프
-const total = Math.round(100 + 300 * (points / (maxRaw || 1)));     // 100~400 스케일
+  const { version, answers } = this.currentTest;
 
-    // 기존 renderTestResultDetails()가 기대하는 형태로 변환
-    const normalizedAnswers = answers.map(a => {
-      const opts = a.it?.opts || [];
-      const userText = (typeof a.ui === 'number') ? opts[a.ui] : '(미응답)';
-      return {
-        question: a.q,
-        options: opts,
-        userAnswer: userText,
-        isCorrect: !!a.ok,
-        correctAnswer: opts[a.it.ans]
-      };
-    });
+  // ① 점수: 100~400 스케일 (전부 정답=400)
+  const totalItems   = answers.length;
+  const correctCount = answers.filter(a => a.ok).length;
+  const total = Math.round(100 + 300 * (correctCount / (totalItems || 1)));
 
-    const resultData = {
-      score: total,
-      completedAt: FV.serverTimestamp(),
-      answers: normalizedAnswers,
-      wrongWords: []
+  // ② 상세 결과 포맷(기존 UI 재사용)
+  const normalizedAnswers = answers.map(a => {
+    const opts = a.it?.opts || [];
+    const userText = (typeof a.ui === 'number' && a.ui >= 0) ? opts[a.ui] : '(미응답)';
+    return {
+      question: a.q,
+      options: opts,
+      userAnswer: userText,
+      isCorrect: !!a.ok,
+      correctAnswer: opts[a.it?.ans ?? -1]
     };
+  });
 
-    this.showLoading(true);
-    (async ()=>{
-      try{
-        const key = `v${version}`;
-        if (isDemoMode){
-          const u = DemoStore.users[this.currentUser.uid];
-          u.testResults = u.testResults || {};
-          u.testResults[key] = { ...resultData, completedAt: new Date() };
-          u.points = (u.points||0) + 50;
-          u.rewardLog = u.rewardLog || [];
-          u.rewardLog.push({ at:new Date(), reason:'온독 검사 완료', amount:50 });
-          u.lastActivity = new Date();
-        } else {
-          await db.collection('users').doc(this.currentUser.uid).update({
-            [`testResults.${key}`]: resultData,
-            points: FV.increment(50),
-            lastActivity: FV.serverTimestamp(),
-            rewardLog: FV.arrayUnion({ at:new Date().toISOString(), reason:'온독 검사 완료', amount:50 })
-          });
+  // ③ 틀린 어휘만 모아 unknownWords 반영(어휘 문항만)
+  const wrongWords = answers
+    .filter(a => !a.ok && a.it?.type === 'vocab')
+    .map(a => a.it?.opts?.[a.it.ans])
+    .filter(Boolean);
+
+  const resultData = {
+    score: total,
+    completedAt: FV.serverTimestamp(),
+    answers: normalizedAnswers,
+    wrongWords
+  };
+
+  this.showLoading(true);
+  (async ()=>{
+    try{
+      const key = `v${version}`;
+      if (isDemoMode){
+        const u = DemoStore.users[this.currentUser.uid];
+        u.testResults = u.testResults || {};
+        u.testResults[key] = { ...resultData, completedAt: new Date() };
+        // 보상
+        u.points = (u.points||0) + 50;
+        u.rewardLog = u.rewardLog || [];
+        u.rewardLog.push({ at:new Date(), reason:'온독 검사 완료', amount:50 });
+        u.lastActivity = new Date();
+
+        // 틀린 어휘 반영
+        if (wrongWords.length){
+          const set = new Set([...(u.unknownWords||[]), ...wrongWords]);
+          u.unknownWords = Array.from(set);
         }
-
-        await this.fetchUserData(this.currentUser.uid);
-        this.updateRewardsDisplay();
-        this.renderTestResultDetails(resultData);
-        this.drawTestHistoryChart();
-        this.showView('test-result-view');
-        this.showAlert('검사를 완료하여 50점을 획득했습니다!');
-      }catch(e){
-        console.error(e);
-        this.showAlert('결과 저장에 실패했습니다.');
-      }finally{
-        this.showLoading(false);
+      } else {
+        const updates = {
+          [`testResults.${key}`]: resultData,
+          points: FV.increment(50),
+          lastActivity: FV.serverTimestamp(),
+          rewardLog: FV.arrayUnion({
+            at: new Date().toISOString(),
+            reason: '온독 검사 완료',
+            amount: 50
+          })
+        };
+        if (wrongWords.length){
+          updates.unknownWords = FV.arrayUnion(...wrongWords);
+        }
+        await db.collection('users').doc(this.currentUser.uid).update(updates);
       }
-    })();
-  },
+
+      // 최신화 + 카드 상태 갱신
+      await this.fetchUserData(this.currentUser.uid);
+      this.updateRewardsDisplay();
+      this.renderTestSelection();              // ← 검사 카드에 “검사 완료 · N점” 반영
+      this.renderTestResultDetails(resultData);
+      this.drawTestHistoryChart();
+      this.showView('test-result-view');
+      this.showAlert('검사를 완료하여 50점을 획득했습니다!');
+    }catch(e){
+      console.error(e);
+      this.showAlert('결과 저장에 실패했습니다.');
+    }finally{
+      this.showLoading(false);
+    }
+  })();
+},
 _submitStage(){
   const items = this.currentTest.currentItems || [];
   let correct = 0;
@@ -2724,6 +2754,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
