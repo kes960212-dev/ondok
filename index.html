@@ -722,9 +722,16 @@ function pickSeededN(pool, n, rng){
  * - 단어 길이/균등 분배로 L/M/H 버킷 구성
  * - 읽기 문항도 난이도별로 다수 포함
  * ============================================ */
-
+function seedFromString(str){
+  let h = 2166136261 >>> 0; // FNV-1a 기반
+  for (let i=0; i<str.length; i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
 const questionBank = (() => {
-  const rng = makeRNG(0xB00C2025);
+  const rng = makeRNG(seedFromString('BOOK2025'));
 
 
   const words = Object.keys(vocabData);
@@ -2712,6 +2719,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
