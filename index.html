@@ -914,8 +914,9 @@ const questionBank = (() => {
             testResults: {},
             myLibrary: { reading: [], finished: [] },
             unknownWords: [],
-            learnHistory: {}
-            ondoki: { xp: 0 }
+            learnHistory: {},
+            ondoki: { xp: 0 },
+            rewardLog: []
           };
 
           await userRef.set(initial, { merge: true });
@@ -1192,16 +1193,8 @@ tryAdminLogin(){
       this.tryAdminLogin();
       return;
     }
-    this.showView(viewId);
     await this.renderAdminDashboard();
-    return;
-  }
-
-  // 💡 먼저 화면을 보여 주고(보이지 않는 상태에서 그리면 사용자 입장에선 빈 화면처럼 보일 수 있음)
-  this.showView(viewId);
-
-  // 각 화면 렌더
-  if (viewId === 'test-selection-view') {
+  } else if (viewId === 'test-selection-view') {
     this.renderTestSelection();
   } else if (viewId === 'my-dashboard-view') {
     this.renderMyDashboard();
@@ -1210,13 +1203,14 @@ tryAdminLogin(){
   } else if (viewId === 'vocab-study-view') {
     this.renderVocabStudy();
   } else if (viewId === 'my-reviews-view') {
-    await this.renderMyReviews();       // ✅ 여기! 나의 독서질문 렌더
+    await this.renderMyReviews();
   } else if (viewId === 'my-library-view') {
     await this.refreshBookLoans(); this.renderMyLibrary();
   } else if (viewId === 'ondoki-view') {
-  this.renderOndoki();
-}
-    this.showView(viewId);
+    this.renderOndoki();
+  }
+
+  this.showView(viewId);
 },
 
       /************** 테스트 **************/
@@ -2907,6 +2901,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
