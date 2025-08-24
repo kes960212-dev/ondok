@@ -360,11 +360,14 @@
 
     <!-- 우측: 캐릭터/진행도 -->
     <div id="ondoki-right" class="recommendation-panel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
-      <div id="ondoki-char" style="font-size:84px; line-height:1;">🥚</div>
-      <div id="ondoki-xp" class="inline-muted" style="margin-top:8px;">성장치: 0 / 5000</div>
-      <div id="ondoki-bar" style="width:100%; height:16px; border-radius:10px; background:#eef5fc; overflow:hidden; margin-top:8px;">
-        <div id="ondoki-bar-fill" style="height:100%; width:0%; background:var(--primary-color); transition:width .3s;"></div>
-      </div>
+      <div id="ondoki-chars"
+     style="display:flex; gap:12px; align-items:center; justify-content:center; font-size:84px; line-height:1;">
+  🥚
+</div>
+<div id="ondoki-xp" class="inline-muted" style="margin-top:8px;">성장치: 0 / 5000</div>
+<div id="ondoki-bar" style="width:100%; height:16px; border-radius:10px; background:#eef5fc; overflow:hidden; margin-top:8px;">
+  <div id="ondoki-bar-fill" style="height:100%; width:0%; background:var(--primary-color); transition:width .3s;"></div>
+</div>
     </div>
   </div>
 </div>
@@ -3078,6 +3081,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
