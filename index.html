@@ -867,6 +867,7 @@ const questionBank = (() => {
     const App = {
       currentUser:null, userData:null, allVocab:{}, allBooks:[],
       learnedWordsInSession:new Set(), currentBookId:null,
+      currentVocabWord: null, 
       currentTestQuestions:[], currentTestVersion:null,
       bookLoans:{},
       isAdminUnlocked: false,
@@ -3061,6 +3062,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
