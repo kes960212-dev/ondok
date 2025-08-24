@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>온독지수 학습 포털</title>
+  <link rel="icon" href="data:,">
   <style>
     :root{--primary-color:#3498db;--secondary-color:#2ecc71;--accent-color:#f1c40f;--light-gray:#f4f7f6;--dark-text:#2c3e50;--light-text:#7f8c8d;--border-color:#ecf0f1;--danger-color:#e74c3c;--purple:#8e44ad}
     *{box-sizing:border-box}
@@ -676,6 +677,18 @@ signInWithEmailAndPassword(email, password){
   </script>
 
   <script>
+    // ==== 적응형 검사 엔진 기본 설정/데이터 ====
+const MST_CFG = {
+  core: { v: 2, r: 2 },              // CORE 단계: 어휘2 + 읽기2
+  stage:{ v: 2, r: 2 },              // S2/S3 단계: 어휘2 + 읽기2
+  thresholds:{ hi: 0.75, lo: 0.40 }, // 단계 컷 기준
+  itemPoint: 10                      // 문항당 점수
+};
+
+// 6학년 기준 보정률
+const RATE_TABLE = {
+  G6: { H: 1.15, M: 1.0, L: 0.85 }
+};
     // ===== 시드 고정 RNG & 셔플 유틸 =====
 function makeRNG(seed){
   let s = seed >>> 0;
@@ -895,7 +908,7 @@ const questionBank = (() => {
   name: data.name || ((auth.currentUser?.email || '').split('@')[0] || '학생'),
   email: data.email || auth.currentUser?.email || '',
   role: (data.role || 'student'),
-  points: data.points ?? 0,
+  points: (data.points !== undefined && data.points !== null) ? data.points : 0,
   rewardLog: data.rewardLog || [],   // ★ 여기 추가
   testResults: data.testResults || {},
   myLibrary: data.myLibrary || { reading: [], finished: [] },
@@ -2698,6 +2711,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
