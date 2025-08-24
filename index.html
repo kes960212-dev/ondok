@@ -1108,25 +1108,18 @@ async findPassword(){
   const name = (this.userData?.name) ? this.userData.name : '사용자';
   document.getElementById('welcome-message').innerText = `${name}님, 환영합니다!`;
 
-  const menus = {
-    student: [
-      { target: 'vocab-study-view', title: '어휘 학습', desc: '사고도구어 전체 목록을 학습합니다.' },
-      { target: 'test-selection-view', title: '나의 온독지수 검사하기', desc: '버전별 검사를 통해 나의 지수를 확인합니다.' },
-      { target: 'my-library-view', title: '나의 서재', desc: '읽고 있거나 완료한 도서 목록을 봅니다.' },
-      { target: 'my-reviews-view', title: '나의 독서 질문', desc: '내가 작성한 독서 질문을 모아봅니다.'},
-      { target: 'my-dashboard-view', title: '나의 대시보드', desc: '학습 현황과 그래프, 캘린더를 확인합니다.' },
-      { target: 'class-library-view', title: '우리반 서재', desc: '추천 도서와 대출 상태를 확인합니다.' },
-    ],
-    teacher: [
-      { target: 'admin-dashboard-view', title: '관리자(우리반) 페이지', desc: '우리반 대시보드 + 학생별 대시보드' }
-    ]
-  };
-
   const grid = document.getElementById('main-menu-grid');
   grid.innerHTML = '';
 
-  // 기본 학생 메뉴
-  menus.student.forEach(menu => {
+  // 학생 메뉴
+  [
+    { target: 'vocab-study-view',   title: '어휘 학습',           desc: '사고도구어 전체 목록을 학습합니다.' },
+    { target: 'test-selection-view',title: '나의 온독지수 검사하기', desc: '버전별 검사를 통해 나의 지수를 확인합니다.' },
+    { target: 'my-library-view',    title: '나의 서재',            desc: '읽고 있거나 완료한 도서 목록을 봅니다.' },
+    { target: 'my-reviews-view',    title: '나의 독서 질문',        desc: '내가 작성한 독서 질문을 모아봅니다.'},
+    { target: 'my-dashboard-view',  title: '나의 대시보드',         desc: '학습 현황과 그래프, 캘린더를 확인합니다.' },
+    { target: 'class-library-view', title: '우리반 서재',           desc: '추천 도서와 대출 상태를 확인합니다.' }
+  ].forEach(menu => {
     const el = document.createElement('div');
     el.className = 'menu-item';
     el.dataset.target = menu.target;
@@ -1134,16 +1127,16 @@ async findPassword(){
     grid.appendChild(el);
   });
 
-  // 교사 역할에만 관리자 메뉴 노출 (데모 테스트하려면 if문 제거)
-  if ((this.userData?.role||'student') === 'teacher' || this.isAdminUnlocked) {
-  menus.teacher.forEach(menu => {
-    // ...
-      const el = document.createElement('div');
-      el.className = 'menu-item';
-      el.dataset.target = menu.target;
-      el.innerHTML = `<h3>${menu.title}</h3><p>${menu.desc}</p>`;
-      grid.appendChild(el);
-    });
+  // 관리자 메뉴(항상 노출). 권한 없으면 설명만 바뀜
+  const isTeacher = (this.userData?.role === 'teacher') || this.isAdminUnlocked;
+  const adminEl = document.createElement('div');
+  adminEl.className = 'menu-item';
+  adminEl.dataset.target = 'admin-dashboard-view';
+  adminEl.innerHTML = `
+    <h3>관리자(우리반) 페이지</h3>
+    <p>${isTeacher ? '우리반 대시보드 + 학생별 대시보드' : '접근하려면 관리자 로그인 필요.'}</p>`;
+  grid.appendChild(adminEl);
+});
   }
 },
 // 관리자 로그인 시도
@@ -1180,14 +1173,26 @@ tryAdminLogin(){
 
 
       async handleMenuClick(viewId){
-  if(viewId==='test-selection-view') this.renderTestSelection();
-  else if(viewId==='my-dashboard-view') this.renderMyDashboard();
-  else if(viewId==='class-library-view'){ await this.refreshBookLoans(); this.renderClassLibrary(); }
-  else if(viewId==='teacher-dashboard-view') this.renderTeacherDashboard();
-  else if(viewId==='vocab-study-view') this.renderVocabStudy();
-  else if(viewId==='my-reviews-view') this.renderMyReviews();
-  else if(viewId==='my-library-view'){ await this.refreshBookLoans(); this.renderMyLibrary(); }
-  else if(viewId==='admin-dashboard-view'){ await this.renderAdminDashboard(); }
+  if (viewId === 'admin-dashboard-view') {
+    // 잠금이면 로그인 유도
+    if (!this.isAdminUnlocked && (this.userData?.role !== 'teacher')) {
+      this.tryAdminLogin();  // 성공 시 내부에서 showView 호출
+      return;
+    }
+    await this.renderAdminDashboard();
+  } else if (viewId === 'test-selection-view') {
+    this.renderTestSelection();
+  } else if (viewId === 'my-dashboard-view') {
+    this.renderMyDashboard();
+  } else if (viewId === 'class-library-view') {
+    await this.refreshBookLoans(); this.renderClassLibrary();
+  } else if (viewId === 'vocab-study-view') {
+    this.renderVocabStudy();
+  } else if (viewId === 'my-reviews-view') {
+    this.renderMyReviews();
+  } else if (viewId === 'my-library-view') {
+    await this.refreshBookLoans(); this.renderMyLibrary();
+  }
   this.showView(viewId);
 },
 
@@ -2754,6 +2759,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
