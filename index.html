@@ -959,7 +959,6 @@ if (version) {
     return;
   }
   this.handleMenuClick(menuItem.dataset.target);
-      this.handleMenuClick(menuItem.dataset.target);
     } else if (popularItem) {
       this.showClassBookDetail(popularItem.dataset.bookId);
     } else if (bookIconCard) {
@@ -1102,13 +1101,14 @@ async findPassword(){
 
   // 관리자 메뉴(항상 노출). 권한 없으면 설명만 바뀜
   const isTeacher = (this.userData?.role === 'teacher') || this.isAdminUnlocked;
-  const adminEl = document.createElement('div');
-  adminEl.className = 'menu-item';
-  adminEl.dataset.target = 'admin-dashboard-view';
-  adminEl.innerHTML = `
-    <h3>관리자(우리반) 페이지</h3>
-    <p>${isTeacher ? '우리반 대시보드 + 학생별 대시보드' : '접근하려면 관리자 로그인 필요.'}</p>`;
-  grid.appendChild(adminEl);
+const adminEl = document.createElement('div');
+adminEl.className = 'menu-item';
+adminEl.dataset.target = 'admin-dashboard-view';
+adminEl.innerHTML = `
+  <h3>관리자(우리반) 페이지</h3>
+  <p>${isTeacher ? '우리반 대시보드 + 학생별 대시보드' : '접근하려면 관리자 로그인 필요.'}</p>
+`;
+grid.appendChild(adminEl);
 },
 // 관리자 로그인 시도
 // 관리자 로그인 시도
@@ -2329,19 +2329,6 @@ if (tabClass) {
     this._adminRenderClassDashboard(users);
   };
 }
-
-if (tabRewards) {
-  // ⬇⬇⬇ 여기에 아래 'tabRewards.onclick = () => { ... }'를 넣거나 기존 내용을 이걸로 교체
-  tabRewards.onclick = () => {
-    document.getElementById('class-dashboard-panel').style.display = 'none';
-    document.getElementById('admin-student-dashboard').style.display = 'none';
-    document.getElementById('admin-rewards-panel').style.display = 'block';
-    this._adminRenderRewards(users);
-  };
-  // ⬆⬆⬆ 여기까지
-}
-
-
   if (tabRewards) {
     tabRewards.onclick = () => {
       document.getElementById('class-dashboard-panel').style.display = 'none';
@@ -2765,6 +2752,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
