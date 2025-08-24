@@ -954,10 +954,6 @@ if (version) {
 }
 
     } else if (menuItem) {
-      if (menuItem.dataset.target === 'admin-dashboard-view') {
-    (async ()=>{ await this.renderAdminDashboard(); this.showView('admin-dashboard-view'); })();
-    return;
-  }
   this.handleMenuClick(menuItem.dataset.target);
     } else if (popularItem) {
       this.showClassBookDetail(popularItem.dataset.bookId);
@@ -1144,14 +1140,22 @@ tryAdminLogin(){
 
 
       async handleMenuClick(viewId){
+  // 관리자 페이지 잠금 체크
   if (viewId === 'admin-dashboard-view') {
-    // 잠금이면 로그인 유도
     if (!this.isAdminUnlocked && (this.userData?.role !== 'teacher')) {
-      this.tryAdminLogin();  // 성공 시 내부에서 showView 호출
+      this.tryAdminLogin();
       return;
     }
+    this.showView(viewId);
     await this.renderAdminDashboard();
-  } else if (viewId === 'test-selection-view') {
+    return;
+  }
+
+  // 💡 먼저 화면을 보여 주고(보이지 않는 상태에서 그리면 사용자 입장에선 빈 화면처럼 보일 수 있음)
+  this.showView(viewId);
+
+  // 각 화면 렌더
+  if (viewId === 'test-selection-view') {
     this.renderTestSelection();
   } else if (viewId === 'my-dashboard-view') {
     this.renderMyDashboard();
@@ -1160,11 +1164,10 @@ tryAdminLogin(){
   } else if (viewId === 'vocab-study-view') {
     this.renderVocabStudy();
   } else if (viewId === 'my-reviews-view') {
-    this.renderMyReviews();
+    await this.renderMyReviews();       // ✅ 여기! 나의 독서질문 렌더
   } else if (viewId === 'my-library-view') {
     await this.refreshBookLoans(); this.renderMyLibrary();
   }
-  this.showView(viewId);
 },
 
       /************** 테스트 **************/
@@ -2243,28 +2246,59 @@ async renderMyReadBooks(){
       fmtDate(d){ const yy=d.getFullYear(); const mm=('0'+(d.getMonth()+1)).slice(-2); const dd=('0'+d.getDate()).slice(-2); return `${yy}-${mm}-${dd}`; },
 
       /* ---------- 내 리뷰 ---------- */
-      renderMyReviews(){
-        const wrap = document.getElementById('my-reviews-list'); wrap.innerHTML='';
-        const myUid = this.currentUser?.uid;
-        const myRevs = (DemoStore.reviews||[]).filter(r=>r.studentUid===myUid).slice().reverse();
-        if(myRevs.length===0){
-          const p=document.createElement('p'); p.style.textAlign='center'; p.style.color='#7f8c8d'; p.innerText='작성한 독서 질문이 없습니다.'; wrap.appendChild(p); return;
-        }
-        myRevs.forEach(r=>{
-          const book = this.allBooks.find(b=>b.id===r.bookId);
-          const item = document.createElement('div'); item.className='my-review-item';
-          item.innerHTML = `
-            <div class="my-review-book-info">
-              <h4>${book?book.title:'(알 수 없음)'}</h4>
-              <div style="color:#636e72;font-size:.9em;">${book?book.author:''}</div>
-            </div>
-            <div class="my-review-content">
-              <div style="white-space:pre-wrap;">${r.reviewText}</div>
-              <div style="margin-top:6px;color:#7f8c8d;font-size:.85em;">${new Date(r.createdAt).toLocaleString()}</div>
-            </div>`;
-          wrap.appendChild(item);
-        });
-      },
+      async renderMyReviews(){
+  const wrap = document.getElementById('my-reviews-list');
+  wrap.innerHTML = '';
+  const myUid = this.currentUser?.uid;
+
+  let list = [];
+  if (isDemoMode){
+    list = (DemoStore.reviews || [])
+      .filter(r => r.studentUid === myUid)
+      .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  } else {
+    try {
+      const snap = await db.collection('reviews')
+        .where('studentUid','==', myUid)
+        .get();
+
+      snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+
+      // createdAt 내림차순 (Timestamp/Date/String 모두 대응)
+      const toDate = (t)=> t?.toDate ? t.toDate()
+                    : (t instanceof Date ? t
+                    : (typeof t === 'string' ? new Date(t) : 0));
+      list.sort((a,b)=> toDate(b.createdAt) - toDate(a.createdAt));
+    } catch (e) {
+      console.error(e);
+      this.showAlert('독서 질문을 불러오지 못했습니다. (권한/규칙 확인)');
+    }
+  }
+
+  if (!list.length){
+    wrap.innerHTML = '<p class="inline-muted">작성한 독서 질문이 없습니다.</p>';
+    return;
+  }
+
+  list.forEach(r=>{
+    const book = this.allBooks.find(b=>b.id===r.bookId);
+    const when = r.createdAt
+      ? new Date(r.createdAt.seconds ? r.createdAt.seconds*1000 : r.createdAt)
+          .toLocaleString('ko-KR') : '';
+    const item = document.createElement('div');
+    item.className='my-review-item';
+    item.innerHTML = `
+      <div class="my-review-book-info">
+        <h4>${book?book.title:'(알 수 없음)'}</h4>
+        <div style="color:#636e72;font-size:.9em;">${book?book.author:''}</div>
+      </div>
+      <div class="my-review-content">
+        <div style="white-space:pre-wrap;">${r.reviewText}</div>
+        <div style="margin-top:6px;color:#7f8c8d;font-size:.85em;">${when}</div>
+      </div>`;
+    wrap.appendChild(item);
+  });
+},
 
       renderTeacherDashboard(){
         const tbody = document.querySelector('#students-table tbody'); tbody.innerHTML='';
@@ -2752,6 +2786,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
