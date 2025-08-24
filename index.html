@@ -252,7 +252,6 @@
 </div>
 
   <!-- 나의 대시보드 -->
-  <!-- 나의 대시보드 -->
 <div id="my-dashboard-view" class="view">
   <button class="back-button">메인으로</button>
   <h2>나의 대시보드</h2>
@@ -263,6 +262,7 @@
     <button class="dashboard-tab" data-tab="read">내가 읽은 책</button>
   </div>
 
+  
   <!-- 요약 탭 -->
   <div id="dashboard-tab-summary">
     <div class="dashboard-grid">
@@ -320,6 +320,35 @@
 </div>
 <!-- 여기까지가 대시보드, 바로 다음 섹션이 우리반 서재 -->
 
+  <!-- 나의 온독이 키우기 -->
+<div id="ondoki-view" class="view">
+  <button class="back-button">메인으로</button>
+  <h2>나의 온독이 키우기</h2>
+
+  <div id="ondoki-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;">
+    <!-- 좌측: 나의 보상 -->
+    <div id="ondoki-left" class="widget" style="background:var(--border-color); padding:16px; border-radius:8px;">
+      <h3>나의 보상</h3>
+      <div id="ondoki-points" style="font-size:2em;text-align:center;">0</div>
+      <div class="divider"></div>
+      <button id="ondoki-feed-btn" style="width:100%; background:var(--secondary-color);">
+        온독이에게 먹이 주기 −50
+      </button>
+      <div class="inline-muted" style="margin-top:8px;">
+        먹이를 주면 보상 50점이 차감되고, 온독이가 성장해요.
+      </div>
+    </div>
+
+    <!-- 우측: 캐릭터/진행도 -->
+    <div id="ondoki-right" class="recommendation-panel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div id="ondoki-char" style="font-size:84px; line-height:1;">🥚</div>
+      <div id="ondoki-xp" class="inline-muted" style="margin-top:8px;">성장치: 0 / 5000</div>
+      <div id="ondoki-bar" style="width:100%; height:16px; border-radius:10px; background:#eef5fc; overflow:hidden; margin-top:8px;">
+        <div id="ondoki-bar-fill" style="height:100%; width:0%; background:var(--primary-color); transition:width .3s;"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
   <!-- 우리반 서재 -->
   <div id="class-library-view" class="view">
@@ -886,6 +915,7 @@ const questionBank = (() => {
             myLibrary: { reading: [], finished: [] },
             unknownWords: [],
             learnHistory: {}
+            ondoki: { xp: 0 }
           };
 
           await userRef.set(initial, { merge: true });
@@ -904,6 +934,7 @@ const questionBank = (() => {
   myLibrary: data.myLibrary || { reading: [], finished: [] },
   unknownWords: data.unknownWords || [],
   learnHistory: data.learnHistory || {},
+  ondoki: data.ondoki || { xp: 0 },
   lastActivity: FV.serverTimestamp()
 };
 ;
@@ -944,6 +975,7 @@ const questionBank = (() => {
         case 'cancel-review-btn': document.getElementById('review-modal').style.display='none'; break;
         case 'start-reading-btn': this.confirmStartReadingFromDetail(); break;
         case 'class-detail-start': this.confirmStartReadingFromClassPanel(); break;
+        case 'ondoki-feed-btn': this.feedOndoki(); break;  
       }
 
       if (button.classList.contains('dashboard-tab')) {
@@ -1095,19 +1127,19 @@ async findPassword(){
 
   // 학생 메뉴
   [
-    { target: 'vocab-study-view',   title: '어휘 학습',           desc: '사고도구어 전체 목록을 학습합니다.' },
-    { target: 'test-selection-view',title: '나의 온독지수 검사하기', desc: '버전별 검사를 통해 나의 지수를 확인합니다.' },
-    { target: 'my-library-view',    title: '나의 서재',            desc: '읽고 있거나 완료한 도서 목록을 봅니다.' },
-    { target: 'my-reviews-view',    title: '나의 독서 질문',        desc: '내가 작성한 독서 질문을 모아봅니다.'},
-    { target: 'my-dashboard-view',  title: '나의 대시보드',         desc: '학습 현황과 그래프, 캘린더를 확인합니다.' },
-    { target: 'class-library-view', title: '우리반 서재',           desc: '추천 도서와 대출 상태를 확인합니다.' }
-  ].forEach(menu => {
-    const el = document.createElement('div');
-    el.className = 'menu-item';
-    el.dataset.target = menu.target;
-    el.innerHTML = `<h3>${menu.title}</h3><p>${menu.desc}</p>`;
-    grid.appendChild(el);
-  });
+  { target: 'vocab-study-view',    title: '어휘 학습',              desc: '사고도구어 전체 목록을 학습합니다.' },
+  { target: 'test-selection-view', title: '나의 온독지수 검사하기',  desc: '버전별 검사를 통해 나의 지수를 확인합니다.' },
+  { target: 'my-library-view',     title: '나의 서재',               desc: '읽고 있거나 완료한 도서 목록을 봅니다.' },
+  { target: 'ondoki-view',         title: '나의 온독이 키우기',      desc: '보상으로 온독이를 성장시켜요.' },
+  { target: 'my-dashboard-view',   title: '나의 대시보드',            desc: '학습 현황과 그래프, 캘린더를 확인합니다.' },
+  { target: 'class-library-view',  title: '우리반 서재',              desc: '추천 도서와 대출 상태를 확인합니다.' }
+].forEach(menu => {
+  const el = document.createElement('div');
+  el.className = 'menu-item';
+  el.dataset.target = menu.target;
+  el.innerHTML = `<h3>${menu.title}</h3><p>${menu.desc}</p>`;
+  grid.appendChild(el);
+});
 
   // 관리자 메뉴(항상 노출). 권한 없으면 설명만 바뀜
   const isTeacher = (this.userData?.role === 'teacher') || this.isAdminUnlocked;
@@ -1181,7 +1213,10 @@ tryAdminLogin(){
     await this.renderMyReviews();       // ✅ 여기! 나의 독서질문 렌더
   } else if (viewId === 'my-library-view') {
     await this.refreshBookLoans(); this.renderMyLibrary();
-  }
+  } else if (viewId === 'ondoki-view') {
+  this.renderOndoki();
+}
+    this.showView(viewId);
 },
 
       /************** 테스트 **************/
@@ -2088,9 +2123,81 @@ _formatRewardLogItems(log = [], limit = 5) {
 
   this.drawTestHistoryChart();
   this.renderLearnCalendar();
-}
-,
+},
+renderOndoki(){
+  // 현재 보상/성장치 표시
+  const points = this.userData?.points || 0;
+  const xp = this.userData?.ondoki?.xp || 0;
+  const pEl = document.getElementById('ondoki-points');
+  if (pEl) pEl.innerText = points;
+  this._renderOndokiCharacter(xp);
 
+  // 화면 보여주기 (메뉴에서 바로 온 경우 대비)
+  this.showView('ondoki-view');
+},
+
+async feedOndoki(){
+  if (!this.currentUser) { this.showAlert('로그인이 필요합니다.'); return; }
+  if ((this.userData?.points || 0) < 50) { this.showAlert('보상이 부족합니다. 최소 50점 필요해요.'); return; }
+
+  this.showLoading(true);
+  try{
+    if (isDemoMode){
+      const u = DemoStore.users[this.currentUser.uid];
+      u.points = (u.points || 0) - 50;
+      u.ondoki = u.ondoki || { xp: 0 };
+      u.ondoki.xp = (u.ondoki.xp || 0) + 50;
+      u.rewardLog = u.rewardLog || [];
+      u.rewardLog.push({ at:new Date(), reason:'온독이 먹이 주기', amount:-50 });
+      u.lastActivity = new Date();
+    } else {
+      await db.collection('users').doc(this.currentUser.uid).update({
+        points: FV.increment(-50),
+        'ondoki.xp': FV.increment(50),
+        lastActivity: FV.serverTimestamp(),
+        rewardLog: FV.arrayUnion({
+          at: new Date().toISOString(),
+          reason: '온독이 먹이 주기',
+          amount: -50
+        })
+      });
+    }
+
+    // 최신 데이터 반영
+    await this.fetchUserData(this.currentUser.uid);
+    this.updateRewardsDisplay();
+    this.renderOndoki();
+
+    // 최종 단계 알림
+    const xpNow = this.userData?.ondoki?.xp || 0;
+    if (Math.floor(xpNow / 200) >= 25) {
+      this.showAlert('축하해요! 온독이가 최종 단계로 성장했어요! 🐹');
+    }
+  }catch(e){
+    console.error(e);
+    this.showAlert('처리에 실패했습니다.');
+  }finally{
+    this.showLoading(false);
+  }
+},
+
+_renderOndokiCharacter(xp = 0){
+  const maxXp = 5000;                     // 최종 목표
+  const stage = Math.min(Math.floor(xp / 200), 25); // 200 단위로 0~25단계
+  const STAGES = [
+    '🥚','🌱','🌿','🍀','🐣','🐥','🐤','🐦','🦉','🦊',
+    '🐱','🐶','🐰','🐻','🐼','🐨','🐯','🦁','🦝','🦄',
+    '🦊','🐶','🐶','🐶','🐹','🐹' // 25단계=완성(귀여운 동물)
+  ];
+
+  const charEl = document.getElementById('ondoki-char');
+  const xpEl   = document.getElementById('ondoki-xp');
+  const bar    = document.getElementById('ondoki-bar-fill');
+
+  if (charEl) charEl.textContent = STAGES[stage] || '🥚';
+  if (xpEl)   xpEl.textContent   = `성장치: ${xp} / ${maxXp}`;
+  if (bar)    bar.style.width    = Math.max(0, Math.min(100, Math.round((xp / maxXp) * 100))) + '%';
+},
       calcAverageOndok(){
         const results = this.userData?.testResults || {};
         const list = Object.values(results).map(r=>r.score).filter(v=>typeof v==='number');
@@ -2800,6 +2907,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
