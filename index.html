@@ -1285,7 +1285,9 @@ document.getElementById('submit-stage-btn').onclick = ()=> this._submitStage();
 },
 _finalizeMst(){
     const { version, scoreRaw, scoreAdj, answers } = this.currentTest;
-    const total = Math.round(100 + scoreRaw + scoreAdj);
+const maxRaw = (answers?.length || 0) * MST_CFG.itemPoint; // 총 문항 점수(예: 12*10=120)
+const points = Math.max(0, Math.min(maxRaw, scoreRaw + scoreAdj)); // 0~maxRaw로 클램프
+const total = Math.round(100 + 300 * (points / (maxRaw || 1)));     // 100~400 스케일
 
     // 기존 renderTestResultDetails()가 기대하는 형태로 변환
     const normalizedAnswers = answers.map(a => {
@@ -1372,11 +1374,14 @@ _submitStage(){
     return;
   }
 
-  const lastDiff = this.currentTest.route[this.currentTest.route.length-1];
-  const {M,H,L} = RATE_TABLE[this.currentTest.band];
-  const diffRate = lastDiff==='H'?H : lastDiff==='L'?L : M;
-  const bonus = (items.length * MST_CFG.itemPoint) * (M - diffRate);
-  this.currentTest.scoreAdj += (raw + bonus);
+  // (기존 4줄 교체)
+const lastDiff = this.currentTest.route[this.currentTest.route.length - 1];
+const { M, H, L } = RATE_TABLE[this.currentTest.band];
+const diffRate = lastDiff === 'H' ? H : (lastDiff === 'L' ? L : M);
+const bonus = (items.length * MST_CFG.itemPoint) * (diffRate - M);
+
+this.currentTest.scoreAdj += bonus;
+
 
   if(this.currentTest.stage==='S2'){
     const acc = correct / items.length;
@@ -2719,6 +2724,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
