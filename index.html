@@ -679,10 +679,11 @@ signInWithEmailAndPassword(email, password){
   <script>
     // ==== 적응형 검사 엔진 기본 설정/데이터 ====
 const MST_CFG = {
-  core: { v: 2, r: 2 },              // CORE 단계: 어휘2 + 읽기2
-  stage:{ v: 2, r: 2 },              // S2/S3 단계: 어휘2 + 읽기2
-  thresholds:{ hi: 0.75, lo: 0.40 }, // 단계 컷 기준
-  itemPoint: 10                      // 문항당 점수
+  // ✅ 읽기 문항(r)은 0으로, 전부 어휘(v)만 출제
+  core:  { v: 4, r: 0 },
+  stage: { v: 4, r: 0 },
+  thresholds: { hi: 0.75, lo: 0.40 },
+  itemPoint: 10
 };
 
 // 6학년 기준 보정률
@@ -732,96 +733,63 @@ function seedFromString(str){
 }
 const questionBank = (() => {
   const rng = makeRNG(seedFromString('BOOK2025'));
-
-
   const words = Object.keys(vocabData);
   const defs  = vocabData;
 
-  // 보조: 시드 고정 셔플
-  function shuffle(arr){ return seededShuffle(arr, rng); }
-
-  // 보조: except를 제외하고 n개 선택
+  function shuffle(a){
+    const b = a.slice();
+    for (let i=b.length-1; i>0; i--){
+      const j = Math.floor(rng()*(i+1));
+      [b[i], b[j]] = [b[j], b[i]];
+    }
+    return b;
+  }
   function pickOthers(except, n){
     const pool = words.filter(w => w !== except);
     return shuffle(pool).slice(0, n);
   }
 
-  // 어휘 문항 생성: "다음 뜻에 해당하는 단어는?"
+  // ✅ 어휘 빈칸 문제
   function makeVocabItem(word){
     const def = defs[word];
-    if(!def) return null;
+    if (!def) return null;
+
     const wrong = pickOthers(word, 3);
     const options = shuffle([word, ...wrong]);
+
     return {
-      type:'vocab',
-      q: `다음 뜻에 가장 알맞은 단어는? “${def}”`,
+      type: 'vocab',
+      // 빈칸형 질문
+      q: `다음 설명의 (  )에 들어갈 가장 알맞은 말은?\n“(  ) : ${def}”`,
       opts: options,
       ans: options.indexOf(word)
     };
   }
 
-  // 전체 어휘 -> 객관식
-  const allVocabItems = words
-    .map(makeVocabItem)
-    .filter(Boolean);
+  // 전체 어휘 → 객관식
+  const allVocabItems = words.map(makeVocabItem).filter(Boolean);
 
-  // 난이도 분배(단어 길이 + 균등 분배)
-  const sortedByLen = allVocabItems
+  // 길이 기준으로 난이도 버킷 나누기
+  const sorted = allVocabItems
     .map(it => ({ it, len: (it.opts[it.ans]||'').length }))
     .sort((a,b)=> a.len - b.len)
     .map(x=>x.it);
 
-  const L_v = [], M_v = [], H_v = [];
-  sortedByLen.forEach((it, i) => {
-    if(i % 3 === 0) L_v.push(it);
-    else if(i % 3 === 1) M_v.push(it);
+  const L_v=[], M_v=[], H_v=[];
+  sorted.forEach((it,i)=>{
+    if (i % 3 === 0) L_v.push(it);
+    else if (i % 3 === 1) M_v.push(it);
     else H_v.push(it);
   });
 
-  // -----------------------------
-  // 난이도별 읽기 문항 (여러 개)
-  // -----------------------------
-  const READ_L = [
-    {type:'read', q:'문장 “고양이가 물을 마신다”에서 주어는?', opts:['고양이','물을','마신다','없다'], ans:0},
-    {type:'read', q:'문장 “나는 사과를 먹었다”에서 목적어는?', opts:['나는','사과','먹었다','에서'], ans:1},
-    {type:'read', q:'“봄이 왔다”의 서술어는?', opts:['봄이','왔다','봄','이'], ans:1},
-    {type:'read', q:'다음 중 문장 성분이 아닌 것은?', opts:['주어','목적어','부사어','속담'], ans:3},
-    {type:'read', q:'문장 “비가 내린다”의 시제는?', opts:['현재','과거','미래','불명'], ans:0},
-    {type:'read', q:'“학생들이 운동장에서 뛴다.”에서 장소를 나타내는 말은?', opts:['학생들이','운동장에서','뛴다','없다'], ans:1},
-  ];
-
-  const READ_M = [
-    {type:'read', q:'글의 중심 생각을 파악하려면 가장 먼저 볼 만한 것은?', opts:['제목과 첫 문단','마지막 문장의 조사','삽화만','글자 수'], ans:0},
-    {type:'read', q:'다음 중 “원인-결과” 관계를 잘 보여 주는 말은?', opts:['그래서','하지만','그러나','또는'], ans:0},
-    {type:'read', q:'설명문에서 흔히 사용하는 방법이 아닌 것은?', opts:['비유','정의','분류','예시'], ans:0},
-    {type:'read', q:'다음 중 중심문장이 있을 가능성이 큰 위치는?', opts:['첫 문장/끝 문장','아무 곳','제목만','부제만'], ans:0},
-    {type:'read', q:'주장하는 글에서 주장의 타당성을 높이는 재료는?', opts:['근거와 자료','분위기 음악','알록달록한 색','긴 문장'], ans:0},
-    {type:'read', q:'다음 중 설명문의 특징으로 알맞은 것은?', opts:['객관적 정보 제시','감정을 호소','인물의 대화 중심','갈등 전개'], ans:0},
-  ];
-
-  const READ_H = [
-    {type:'read', q:'다음 글의 주제로 적절한 것은? (주제/세부 정보 구분 문제)', opts:['글 전체의 핵심 생각','예시 하나','부연 설명','부적절한 추측'], ans:0},
-    {type:'read', q:'논설문에서 “반론 제기”의 목적은?', opts:['주장의 설득력 강화','글의 분량 늘리기','독자 혼란 주기','주제를 바꾸기'], ans:0},
-    {type:'read', q:'다음 중 내용 일치하지 않는 것을 고르시오(세부 사실 정확성).', opts:['일치하지 않음 선택','전부 일치','모두 틀림','판단 불가'], ans:0},
-    {type:'read', q:'글의 관점/시점을 파악하는 이유로 가장 적절한 것은?', opts:['해석의 기준 제공','문장 수 파악','문자 모양 파악','그림 찾기'], ans:0},
-    {type:'read', q:'다음 글의 제목으로 가장 알맞은 것은?(요지/핵심 묻기)', opts:['핵심을 압축한 문장','예시 한 줄','문장 중간 단어','연결어만'], ans:0},
-    {type:'read', q:'설명 방식 중 “비교/대조”의 효과로 적절한 것은?', opts:['차이/공통점이 선명','문장이 늘어남','감정 호소 증가','주제 변경'], ans:0},
-  ];
-
-  // CORE 풀: 전 난이도 섞어 넉넉히 구성(최소 수십 개)
-  const CORE = shuffle([
-    ...L_v.slice(0, 60),
-    ...M_v.slice(0, 60),
-    ...H_v.slice(0, 60)
-  ]);
-
-  // 난이도별 풀(어휘 + 읽기)
-  const poolL = shuffle([...L_v, ...READ_L]);
-  const poolM = shuffle([...M_v, ...READ_M]);
-  const poolH = shuffle([...H_v, ...READ_H]);
+  // ✅ CORE/단계 풀은 어휘만
+  const CORE  = shuffle([ ...L_v.slice(0,60), ...M_v.slice(0,60), ...H_v.slice(0,60) ]);
+  const poolL = shuffle([ ...L_v ]);
+  const poolM = shuffle([ ...M_v ]);
+  const poolH = shuffle([ ...H_v ]);
 
   return {
-    core: CORE,   // CORE 단계에서 필요 수만큼 뽑아 씀
+    core: CORE,
     L: poolL,
     M: poolM,
     H: poolH
@@ -986,6 +954,11 @@ if (version) {
 }
 
     } else if (menuItem) {
+      if (menuItem.dataset.target === 'admin-dashboard-view') {
+    (async ()=>{ await this.renderAdminDashboard(); this.showView('admin-dashboard-view'); })();
+    return;
+  }
+  this.handleMenuClick(menuItem.dataset.target);
       this.handleMenuClick(menuItem.dataset.target);
     } else if (popularItem) {
       this.showClassBookDetail(popularItem.dataset.bookId);
@@ -1621,33 +1594,41 @@ _formatRewardLogItems(log = [], limit = 5) {
         amount: 30
       });
 
-    }else{
-      const batch = db.batch();
-      const reviewRef = { _col:'reviews', _id:'r_'+(Date.now()+Math.random()) };
-      const userRef = { _col:'users', _id:this.currentUser.uid };
+    } else {
+  const batch = db.batch();
 
-      batch.set(reviewRef, {
-        bookId:this.currentBookId, studentUid:this.currentUser.uid,
-        studentName:this.userData.name, reviewText, createdAt: FV.serverTimestamp()
-      });
+  // ✅ 진짜 DocumentReference 사용
+  const reviewId = 'r_' + (Date.now() + Math.random());
+  const reviewDoc = db.collection('reviews').doc(reviewId);
+  const userDoc   = db.collection('users').doc(this.currentUser.uid);
 
-      // ✅ 보상 로그 추가 (실서비스: arrayUnion으로 객체 푸시)
-      batch.update(userRef, {
-        'myLibrary.reading': FV.arrayRemove(this.currentBookId),
-        'myLibrary.finished': FV.arrayUnion(this.currentBookId),
-        points: FV.increment(30),
-        lastActivity: FV.serverTimestamp(),
-        rewardLog: FV.arrayUnion({
-          at: new Date().toISOString(),   // 또는 FV.serverTimestamp()를 쓰고 싶으면 문자열 대신 사용 불가 -> ISO 권장
-          reason: '독서 질문 제출',
-          amount: 30
-        })
-      });
+  // 리뷰 문서 쓰기
+  batch.set(reviewDoc, {
+    bookId: this.currentBookId,
+    studentUid: this.currentUser.uid,
+    studentName: this.userData.name,
+    reviewText,
+    createdAt: FV.serverTimestamp()
+  });
 
-      await batch.commit();
-      await db.collection('books').doc(this.currentBookId).set({loanedBy:null},{merge:true});
-    }
+  // 내 서재/포인트/보상로그 업데이트
+  batch.update(userDoc, {
+    'myLibrary.reading': FV.arrayRemove(this.currentBookId),
+    'myLibrary.finished': FV.arrayUnion(this.currentBookId),
+    points: FV.increment(30),
+    lastActivity: FV.serverTimestamp(),
+    // 서버시간을 중첩 sentinel로 쓰는 건 피하고 문자열로 저장(간단/안전)
+    rewardLog: FV.arrayUnion({
+      at: new Date().toISOString(),
+      reason: '독서 질문 제출',
+      amount: 30
+    })
+  });
 
+  await batch.commit();
+  await db.collection('books').doc(this.currentBookId)
+    .set({ loanedBy: null }, { merge: true });
+}
     await this.fetchUserData(this.currentUser.uid);
     await this.refreshBookLoans();
     this.updateRewardsDisplay();
@@ -1907,20 +1888,35 @@ _formatRewardLogItems(log = [], limit = 5) {
   }
 },
    async renderClassReviews(bookId){
-  const reviewsContainer = document.getElementById('class-reviews-container');
+   const reviewsContainer = document.getElementById('class-reviews-container');
   reviewsContainer.innerHTML = '<h3 style="margin-top:18px;">✨ 우리반 친구들의 독서 질문 ✨</h3>';
 
   let reviews = [];
+
   if (isDemoMode) {
+    // 데모: 메모리에서 필터 + 최신순
     reviews = (DemoStore.reviews || [])
       .filter(r => r.bookId === bookId)
       .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
   } else {
+    // 🔁 인덱스 없이: where만 쓰고, 가져온 뒤 JS에서 createdAt 내림차순 정렬
     const snapshot = await db.collection('reviews')
-      .where('bookId','==', bookId)
-      .orderBy('createdAt','desc')
+      .where('bookId', '==', bookId)
       .get();
+
+    reviews = [];
     snapshot.forEach(doc => reviews.push({ id: doc.id, ...doc.data() }));
+
+    // createdAt 정렬 (Timestamp/Date/String 모두 대응)
+    reviews.sort((a,b)=>{
+      const ta = a.createdAt?.toDate ? a.createdAt.toDate() :
+                 (a.createdAt instanceof Date ? a.createdAt :
+                 (typeof a.createdAt === 'string' ? new Date(a.createdAt) : 0));
+      const tb = b.createdAt?.toDate ? b.createdAt.toDate() :
+                 (b.createdAt instanceof Date ? b.createdAt :
+                 (typeof b.createdAt === 'string' ? new Date(b.createdAt) : 0));
+      return (tb - ta);
+    });
   }
 
   if (!reviews.length) {
@@ -2192,13 +2188,25 @@ async renderMyReadBooks(){
   let myReviews = [];
   if (isDemoMode) {
     myReviews = (DemoStore.reviews || []).filter(r => r.studentUid === this.currentUser?.uid);
-  } else {
-    const snap = await db.collection('reviews')
-      .where('studentUid','==', this.currentUser.uid)
-      .orderBy('createdAt','desc')
-      .get();
-    snap.forEach(doc => myReviews.push({ id: doc.id, ...doc.data() }));
-  }
+} else {
+  // 🔁 인덱스 없이: where만 쓰고 가져온 뒤 정렬
+  const snap = await db.collection('reviews')
+    .where('studentUid','==', this.currentUser.uid)
+    .get();
+
+  myReviews = [];
+  snap.forEach(doc => myReviews.push({ id: doc.id, ...doc.data() }));
+
+  myReviews.sort((a,b)=>{
+    const ta = a.createdAt?.toDate ? a.createdAt.toDate() :
+               (a.createdAt instanceof Date ? a.createdAt :
+               (typeof a.createdAt === 'string' ? new Date(a.createdAt) : 0));
+    const tb = b.createdAt?.toDate ? b.createdAt.toDate() :
+               (b.createdAt instanceof Date ? b.createdAt :
+               (typeof b.createdAt === 'string' ? new Date(b.createdAt) : 0));
+    return (tb - ta);
+  });
+}
 
   // 책ID별 최신 독서 질문 매핑
   const reviewByBook = new Map();
@@ -2759,6 +2767,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
