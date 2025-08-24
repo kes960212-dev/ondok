@@ -142,10 +142,13 @@
   <!-- 메인 메뉴 -->
 <div id="main-menu-view" class="view">
   <button id="logout-button">로그아웃</button>
-  <!-- ⬇️ 여기에 추가 -->
   <button id="admin-login-btn" style="margin-left:8px;background:#8e44ad">관리자 로그인</button>
-  <!-- ⬆️ 여기까지 -->
   <h2 id="welcome-message"></h2>
+  <div id="home-points-banner" class="widget"
+     style="background:var(--border-color); padding:16px; border-radius:10px; margin:8px 0 16px;">
+  <h3 style="margin:0 0 6px;">현재 보상</h3>
+  <p id="home-points-value" style="font-size:2em; margin:0; text-align:center;">0</p>
+</div>
   <div id="main-menu-grid" class="menu-grid"></div>
 </div>
 
@@ -471,6 +474,7 @@
           <div class="widget"><h3>평균 온독지수</h3><p id="adm-ondok" style="font-size:2em; text-align:center;"></p></div>
           <div class="widget"><h3>읽은 책</h3><p id="adm-finished-count" style="font-size:2em; text-align:center;"></p></div>
           <div class="widget"><h3>읽는 중</h3><div id="adm-reading-list"></div></div>
+          <div class="widget"><h3>현재 보상</h3><p id="dashboard-points" style="font-size:2em; text-align:center;">0</p><div class="inline-muted" style="text-align:center;">온독이 먹이 주기: -50점</div></div>
           <div class="widget" style="grid-column: 1 / -1;"><h3>학습이 필요한 어휘</h3><div id="adm-unknown-words"></div></div>
         </div>
 
@@ -1109,19 +1113,30 @@ async findPassword(){
       },
 
       updateRewardsDisplay(){
-        const display = document.getElementById('rewards-display');
-        if(this.userData && this.userData.role==='student'){
-          display.innerHTML = `🏅 보상: ${this.userData.points || 0}점`;
-          display.style.display='block';
-        }else{
-          display.style.display='none';
-        }
-      },
+  const pts = this.userData?.points || 0;
+
+  const display = document.getElementById('rewards-display');
+  if (this.userData && this.userData.role === 'student') {
+    display.innerHTML = `🏅 보상: ${pts}점`;
+    display.style.display = 'block';
+  } else {
+    display.style.display = 'none';
+  }
+
+  // 메인 배너 & 대시보드 값 동시 갱신 (있을 때만)
+  const homeVal = document.getElementById('home-points-value');
+  if (homeVal) homeVal.textContent = pts;
+
+  const dashVal = document.getElementById('dashboard-points');
+  if (dashVal) dashVal.textContent = pts;
+},
 
       /* ---------- 메인 메뉴 ---------- */
       renderMainMenu(){
   const name = (this.userData?.name) ? this.userData.name : '사용자';
   document.getElementById('welcome-message').innerText = `${name}님, 환영합니다!`;
+ const homeVal = document.getElementById('home-points-value');
+  if (homeVal) homeVal.textContent = this.userData?.points || 0;
 
   const grid = document.getElementById('main-menu-grid');
   grid.innerHTML = '';
@@ -2080,6 +2095,8 @@ _formatRewardLogItems(log = [], limit = 5) {
       renderMyDashboard(){
   const avg = this.calcAverageOndok();
   document.getElementById('dashboard-ondok').innerText = avg ? Math.round(avg) : '-';
+  const dp = document.getElementById('dashboard-points');
+  if (dp) dp.innerText = this.userData?.points || 0;
 
   // ✅ [추가] 완료한 책 개수 표시
   const finishedCount = (this.userData?.myLibrary?.finished || []).length;
@@ -2901,6 +2918,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
