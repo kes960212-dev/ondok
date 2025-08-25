@@ -598,7 +598,7 @@
     const deepClone = obj => JSON.parse(JSON.stringify(obj));
 
     const DemoStore = {
-      sers: {}, reviews: [], loans: {}, _uidSeq: 1,
+      users: {}, reviews: [], loans: {}, _uidSeq: 1,
   vocabSentences: [], 
   newUid(){ return 'u_'+(this._uidSeq++); }
 };
@@ -3081,6 +3081,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
