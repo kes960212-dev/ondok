@@ -2287,6 +2287,13 @@ async submitVocabSentence(){
     const s=document.createElement('span'); s.className='pill'; s.innerText=w; shortWrap.appendChild(s);
   });
 
+  const xpDash = this.userData?.ondoki?.xp || 0;
+this._renderOndokiCharacter(xpDash, {
+  charId: 'dash-ondoki-char',
+  xpId: 'dash-ondoki-xp',
+  barFillId: 'dash-ondoki-bar-fill'
+});
+
   // 상세/그래프/캘린더
   const detailWrap = document.getElementById('needed-words-detail'); 
   detailWrap.innerHTML='';
@@ -2304,14 +2311,17 @@ async submitVocabSentence(){
   });
 },
 renderOndoki(){
-  // 현재 보상/성장치 표시
   const points = this.userData?.points || 0;
   const xp = this.userData?.ondoki?.xp || 0;
   const pEl = document.getElementById('ondoki-points');
   if (pEl) pEl.innerText = points;
-  this._renderOndokiCharacter(xp);
 
-  // 화면 보여주기 (메뉴에서 바로 온 경우 대비)
+  this._renderOndokiCharacter(xp, {
+    charId: 'ondoki-chars',
+    xpId: 'ondoki-xp',
+    barFillId: 'ondoki-bar-fill'
+  });
+
   this.showView('ondoki-view');
 },
 
@@ -2362,24 +2372,37 @@ async feedOndoki(){
   }
 },
 
-_renderOndokiCharacter(xp = 0, ids = {}) {
+_renderOndokiCharacter(xp = 0) {
   const maxXp = 5000;
-  // ✅ 200 XP 모일 때마다 1단계 상승
+
+  // 200xp마다 다음 단계(0~25)
   const stage = Math.min(Math.floor(xp / 200), 25);
 
+  // 26단계 이모지(원하는 걸로 바꿔도 됨)
   const STAGES = [
-    '🥚','🌱','🌿','🍀','🐣','🐥','🐤','🐦','🦉','🦊',
-    '🐱','🐶','🐰','🐻','🐼','🐨','🐯','🦁','🦝','🦄',
-    '🦊','🐶','🐶','🐶','🐹','🐹'
+    '🥚','🌱','🌿','🍀','🌼','🪴','🌳','🐣','🐥','🐤','🐦','🕊️','🦉',
+    '🦊','🐱','🐶','🐰','🐻','🐼','🐨','🐯','🦁','🦝','🦄','🐹','🐲'
   ];
 
-  const charEl = document.getElementById(ids.charId || 'ondoki-chars');   // ← 실제 id
-  const xpEl   = document.getElementById(ids.xpId   || 'ondoki-xp');       // ← 실제 id
-  const bar    = document.getElementById(ids.barFillId || 'ondoki-bar-fill'); // ← 실제 id
+  // 메인(온독이) 요소
+  const charMain = document.getElementById('ondoki-chars') || document.getElementById('ondoki-char');
+  const xpMain   = document.getElementById('ondoki-xp');
+  const barMain  = document.getElementById('ondoki-bar-fill');
 
-  if (charEl) charEl.textContent = STAGES[stage] || '🥚';
-  if (xpEl)   xpEl.textContent   = `성장치: ${xp} / ${maxXp}`;
-  if (bar)    bar.style.width    = Math.round((xp / maxXp) * 100) + '%';
+  // 대시보드 요소
+  const charDash = document.getElementById('dash-ondoki-char');
+  const xpDash   = document.getElementById('dash-ondoki-xp');
+  const barDash  = document.getElementById('dash-ondoki-bar-fill');
+
+  // 두 위치를 모두 갱신
+  [
+    [charMain, xpMain, barMain],
+    [charDash, xpDash, barDash]
+  ].forEach(([c, x, b]) => {
+    if (c) c.textContent = STAGES[stage];
+    if (x) x.textContent = `성장치: ${xp} / ${maxXp}`;
+    if (b) b.style.width = Math.min(100, Math.round((xp / maxXp) * 100)) + '%';
+  });
 },
       calcAverageOndok(){
         const results = this.userData?.testResults || {};
@@ -3090,6 +3113,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
