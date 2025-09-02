@@ -1901,7 +1901,7 @@ async submitVocabSentence(){
           dates.forEach(d=>{
             const sec = document.createElement('div');
             sec.style.margin='8px 0';
-            sec.innerHTML = `<div><strong>${d}</strong></div><div>${(hist\[d]||\[]).map(w=>`<span class="pill">${w}</span>`).join(' ')}</div>`;
+            sec.innerHTML = `<div><strong>${d}</strong></div><div>${(hist[d] || []).map(w => `<span class="pill">${w}</span>`).join(' ')}</div>`;
             wrap.appendChild(sec);
           });
         }
@@ -3113,6 +3113,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
