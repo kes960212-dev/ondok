@@ -402,120 +402,91 @@
   <!-- 교사 대시보드 -->
   <!-- 관리자(교사) 페이지 -->
 <div id="admin-dashboard-view" class="view">
-  <button class="back-button">메인으로</button>
-  <h2>관리자 페이지</h2>
+    <button class="back-button">메인으로</button>
+    <h2>관리자 페이지</h2>
 
-  <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start;">
-    <!-- 좌측: 우리반 학생 대시보드 탭/목록 -->
-    <div style="background:var(--border-color);padding:12px;border-radius:10px;">
-      <h3 style="margin-top:0;">우리반 학생 대시보드</h3>
-      <div id="admin-student-list" style="display:flex;flex-direction:column;gap:6px; max-height:60vh; overflow:auto;"></div>
-    </div>
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start;">
+        <div style="background:var(--border-color);padding:12px;border-radius:10px;">
+            <h3 style="margin-top:0;">우리반 학생 대시보드</h3>
+            <div id="admin-student-list" style="display:flex;flex-direction:column;gap:6px; max-height:60vh; overflow:auto;"></div>
+        </div>
 
-    <!-- 우측: 우리반 대시보드 -->
-    <!-- 탭 버튼 -->
-<div id="admin-right-tabs" style="display:flex;gap:8px;margin-bottom:8px;">
-  <button id="adm-tab-class" class="button" style="background:#3498db;">우리반 대시보드</button>
-  <button id="adm-tab-rewards" class="button" style="background:#8e44ad;">보상 확인하기</button>
-</div>
+        <div>
+            <div id="admin-right-tabs" style="display:flex;gap:8px;margin-bottom:8px;">
+                <button id="adm-tab-class" class="button" style="background:#3498db;">우리반 대시보드</button>
+                <button id="adm-tab-rewards" class="button" style="background:#8e44ad;">보상 확인하기</button>
+            </div>
 
-<!-- (기존) 우리반 대시보드 패널: 그대로 유지 -->
- <div id="class-dashboard-panel" class="recommendation-panel" style="background:#fff; grid-column:1 / -1;">
+            <div id="class-dashboard-panel" class="recommendation-panel" style="background:#fff; grid-column:1 / -1;">
+                <div id="class-reading-thermometer" style="margin:12px 0;">
+                    <strong>📊 우리반 독서 온도계</strong>
+                    <div style="background:#eef5fc; border-radius:10px; height:30px; width:100%; overflow:hidden; border:1px solid #d7e6f5;">
+                        <div id="thermo-bar" style="background:#ff6b6b; height:100%; width:0%; transition:width 800ms;"></div>
+                    </div>
+                    <div id="thermo-label" class="inline-muted" style="margin-top:6px;">0 / 500 권</div>
+                </div>
+                <div class="divider"></div>
+                <div style="margin:12px 0;">
+                    <strong>🏅 우리반 독서왕 순위</strong>
+                    <ol id="class-reading-king" style="margin-top:8px;"></ol>
+                </div>
+                <div class="divider"></div>
+                <div style="margin:12px 0;">
+                    <strong>🧠 우리반 사고도구어 순위 (Word Cloud)</strong>
+                    <canvas id="class-wordcloud-canvas" style="width:100%;height:240px;border:1px dashed #d7e6f5;border-radius:8px"></canvas>
+                </div>
+                <div class="divider"></div>
+                <div style="margin:12px 0;">
+                    <strong>📚 우리반 평균 독서 권수</strong>
+                    <div id="class-avg-books" style="margin-top:6px;font-size:1.2em;"></div>
+                </div>
+            </div>
 
- <!-- (1) 우리반 독서 온도계 -->
-<div id="class-reading-thermometer" style="margin:12px 0;">
-  <strong>📊 우리반 독서 온도계</strong>
-  <div style="background:#eef5fc; border-radius:10px; height:30px; width:100%; overflow:hidden; border:1px solid #d7e6f5;">
-    <div id="thermo-bar"
-         style="background:#ff6b6b; height:100%; width:0%; transition:width 800ms;">
-    </div>
-  </div>
-  <div id="thermo-label" class="inline-muted" style="margin-top:6px;">0 / 500 권</div>
-</div>
+            <div id="admin-rewards-panel" class="recommendation-panel" style="background:#fff; grid-column:1 / -1;">
+                <h3 style="margin:0 0 10px;">보상 확인/관리</h3>
+                <table id="rewards-table" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">이름</th>
+                            <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">이메일</th>
+                            <th style="text-align:right; padding:8px; border-bottom:1px solid var(--border-color);">현재 보상</th>
+                            <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">최근 보상내역</th>
+                            <th style="text-align:center; padding:8px; border-bottom:1px solid var(--border-color);">추가 지급</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
 
-
-        <!-- (2) 우리반 독서왕 순위 -->
-        <div class="divider"></div>
-        <div style="margin:12px 0;">
-          <strong>🏅 우리반 독서왕 순위</strong>
-          <ol id="class-reading-king" style="margin-top:8px;"></ol>
-        </div>
-
-        <!-- (3) 우리반 사고도구어 순위 (워드클라우드) -->
-        <div class="divider"></div>
-        <div style="margin:12px 0;">
-          <strong>🧠 우리반 사고도구어 순위 (Word Cloud)</strong>
-          <canvas id="class-wordcloud-canvas" style="width:100%;height:240px;border:1px dashed #d7e6f5;border-radius:8px"></canvas>
-        </div>
-
-        <!-- (4) 우리반 평균 독서 권수 -->
-        <div class="divider"></div>
-        <div style="margin:12px 0;">
-          <strong>📚 우리반 평균 독서 권수</strong>
-          <div id="class-avg-books" style="margin-top:6px;font-size:1.2em;"></div>
-
-</div>
-
-<!-- (신규) 보상 확인/관리 패널 -->
-<div id="admin-rewards-panel" class="recommendation-panel" style="background:#fff; grid-column:1 / -1;">
-  <h3 style="margin:0 0 10px;">보상 확인/관리</h3>
-
-  <table id="rewards-table" style="width:100%; border-collapse:collapse;">
-  <thead>
-    <tr>
-      <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">이름</th>
-      <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">이메일</th>
-      <th style="text-align:right; padding:8px; border-bottom:1px solid var(--border-color);">현재 보상</th>
-      <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">최근 보상내역</th>
-      <th style="text-align:center; padding:8px; border-bottom:1px solid var(--border-color);">추가 지급</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-
-</div>
-
-        </div>
-      </div>
-
-      <!-- 학생 선택 시 우측 패널을 학생 대시보드로 전환 -->
-      <div id="admin-student-dashboard" style="display:none;">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <h3 id="adm-dash-title" style="margin:0;">학생 대시보드</h3>
-          <button id="adm-back-to-class" class="button" style="background:#636e72;">우리반 대시보드 보기</button>
-        </div>
-
-        <div class="dashboard-grid" style="margin-top:12px;">
-          <div class="widget"><h3>평균 온독지수</h3><p id="adm-ondok" style="font-size:2em; text-align:center;"></p></div>
-          <div class="widget"><h3>읽은 책</h3><p id="adm-finished-count" style="font-size:2em; text-align:center;"></p></div>
-          <div class="widget"><h3>읽는 중</h3><div id="adm-reading-list"></div></div>
-          <div class="widget"><h3>현재 보상</h3><p id="dashboard-points" style="font-size:2em; text-align:center;">0</p><div class="inline-muted" style="text-align:center;">온독이 먹이 주기: -50점</div></div>
-          <div class="widget" style="grid-column: 1 / -1;"><h3>학습이 필요한 어휘</h3><div id="adm-unknown-words"></div></div>
-        </div>
-
-        <div id="adm-test-history-wrap" class="recommendation-panel" style="background:#fbfdff;">
-          <h3 style="margin:0 0 8px 0;">📈 온독지수 측정 히스토리</h3>
-          <canvas id="adm-test-history-canvas" style="width:100%;height:260px;border:1px dashed #d7e6f5;border-radius:8px;"></canvas>
-        </div>
-
-        <div class="divider"></div>
-        <h3 style="text-align:left;margin:10px 0 6px;">학습이 필요한 어휘(상세)</h3>
-        <div id="adm-needed-words-detail" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
-
-<div class="divider"></div>
-<h3 style="text-align:left;margin:10px 0 6px;">보상 내역</h3>
-<div id="adm-reward-log" class="recommendation-panel" style="background:#fff;">
-  <!-- JS에서 최근 5개 보상 내역을 렌더링 -->
-</div>
-
-        <div class="divider"></div>
-        <h3 style="text-align:left;margin:10px 0 6px;">학습 기록 캘린더</h3>
-        <div class="calendar-legend"><span class="legend-box"></span>초록 칸: 해당 날짜에 학습한 어휘가 있습니다.</div>
-        <div id="adm-calendar-grid" class="calendar-grid" style="margin-top:10px;"></div>
-      </div>
-    </div>
-  </div>
-</div>
+            <div id="admin-student-dashboard" style="display:none;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <h3 id="adm-dash-title" style="margin:0;">학생 대시보드</h3>
+                    <button id="adm-back-to-class" class="button" style="background:#636e72;">우리반 대시보드 보기</button>
+                </div>
+                <div class="dashboard-grid" style="margin-top:12px;">
+                    <div class="widget"><h3>평균 온독지수</h3><p id="adm-ondok" style="font-size:2em; text-align:center;"></p></div>
+                    <div class="widget"><h3>읽은 책</h3><p id="adm-finished-count" style="font-size:2em; text-align:center;"></p></div>
+                    <div class="widget"><h3>읽는 중</h3><div id="adm-reading-list"></div></div>
+                    <div class="widget"><h3>현재 보상</h3><p id="dashboard-points" style="font-size:2em; text-align:center;">0</p><div class="inline-muted" style="text-align:center;">온독이 먹이 주기: -50점</div></div>
+                    <div class="widget" style="grid-column: 1 / -1;"><h3>학습이 필요한 어휘</h3><div id="adm-unknown-words"></div></div>
+                </div>
+                <div id="adm-test-history-wrap" class="recommendation-panel" style="background:#fbfdff;">
+                    <h3 style="margin:0 0 8px 0;">📈 온독지수 측정 히스토리</h3>
+                    <canvas id="adm-test-history-canvas" style="width:100%;height:260px;border:1px dashed #d7e6f5;border-radius:8px;"></canvas>
+                </div>
+                <div class="divider"></div>
+                <h3 style="text-align:left;margin:10px 0 6px;">학습이 필요한 어휘(상세)</h3>
+                <div id="adm-needed-words-detail" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+                <div class="divider"></div>
+                <h3 style="text-align:left;margin:10px 0 6px;">보상 내역</h3>
+                <div id="adm-reward-log" class="recommendation-panel" style="background:#fff;">
+                    </div>
+                <div class="divider"></div>
+                <h3 style="text-align:left;margin:10px 0 6px;">학습 기록 캘린더</h3>
+                <div class="calendar-legend"><span class="legend-box"></span>초록 칸: 해당 날짜에 학습한 어휘가 있습니다.</div>
+                <div id="adm-calendar-grid" class="calendar-grid" style="margin-top:10px;"></div>
+            </div>
+        </div> </div> </div>
 
 
   <!-- 모달 -->
@@ -3108,6 +3079,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
