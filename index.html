@@ -1096,7 +1096,7 @@ async findPassword(){
   if(isDemoMode){
     const hit = Object.values(DemoStore.users).find(u => (u.email===email && (u.name||'').trim()===name));
     if(hit && hit.password){
-      this.showAlert(`"${name}"님의 비밀번호는\\n\\n✅ ${hit.password}\\n\\n입니다. (데모 모드)`);
+      this.showAlert(`"${name}"님의 비밀번호는\n\n✅ ${hit.password}\n\n입니다. (데모 모드)`);
     }else{
       this.showAlert('일치하는 사용자나 저장된 비밀번호가 없습니다. (데모 모드)');
     }
@@ -1211,8 +1211,7 @@ adminEl.className = 'menu-item';
 adminEl.dataset.target = 'admin-dashboard-view';
 adminEl.innerHTML = `
   <h3>관리자(우리반) 페이지</h3>
-  <p>${isTeacher ? '우리반 대시보드 + 학생별 대시보드' : '접근하려면 관리자 로그인 필요.'}</p>
-`;
+  <p>${isTeacher ? '우리반 대시보드 + 학생별 대시보드' : '접근하려면 관리자 로그인 필요.'}</p>`;
 grid.appendChild(adminEl);
 },
 // 관리자 로그인 시도
@@ -1299,8 +1298,7 @@ tryAdminLogin(){
     card.innerHTML = `
       <h3>적응형 온독지수 (6학년) — 버전 ${version}</h3>
       <button type="button" class="button" data-version="${version}">검사 시작</button>
-      ${statusHtml}
-    `;
+      ${statusHtml}`;
 
     grid.appendChild(card);
   }
@@ -3114,6 +3112,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
