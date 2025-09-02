@@ -1529,7 +1529,7 @@ this.currentTest.scoreAdj += bonus;
           }
           const options = [word, ...Array.from(wrong)].sort(()=>Math.random()-0.5);
           this.currentTestQuestions.push({
-            question: `다음 중 '${this.allVocab\[word]}' 라는 뜻을 가진 어휘는 무엇일까요?`,
+            question: `다음 중 '${this.allVocab[word]}' 라는 뜻을 가진 어휘는 무엇일까요?`,
             options, answer: options.indexOf(word), correctWord: word
           });
         });
@@ -3113,6 +3113,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
