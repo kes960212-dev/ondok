@@ -950,7 +950,6 @@ const questionBank = (() => {
   ondoki: data.ondoki || { xp: 0 },
   lastActivity: FV.serverTimestamp()
 };
-;
 
         try { await userRef.set(fixed, { merge: true }); } catch(e){ console.warn(e); }
         this.userData = Object.assign({ uid: snap.id }, data, fixed);
@@ -3079,6 +3078,7 @@ _renderLearnCalendarForUser(user, gridEl){
   </script>
 </body>
 </html>
+
 
 
 
