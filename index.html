@@ -3101,9 +3101,12 @@ _renderLearnCalendarForUser(user, gridEl){
       DemoAuth._user = {uid, email:'demo@example.com'};
       DemoAuth._listeners.forEach(cb=>cb(DemoAuth._user));
     }
-  </script>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
 </body>
 </html>
+
 
 
 
