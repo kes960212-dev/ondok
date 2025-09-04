@@ -2399,7 +2399,7 @@ _renderOndokiCharacter(xp = 0, ids = {}) {
     if (xpEl)   xpEl.textContent   = `성장치: ${xp} / ${maxXp}`;
     if (barEl)  barEl.style.width  = Math.min(100, Math.round((xp / maxXp) * 100)) + '%';
   });
-}
+},
   // 두 위치를 모두 갱신
   [
     [charMain, xpMain, barMain],
@@ -3119,6 +3119,7 @@ DemoAuth._listeners.forEach(cb=>cb(DemoAuth._user));
 </script>
 </body>
 </html>
+
 
 
 
