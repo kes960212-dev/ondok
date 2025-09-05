@@ -2400,14 +2400,7 @@ _renderOndokiCharacter(xp = 0, ids = {}) {
     if (barEl)  barEl.style.width  = Math.min(100, Math.round((xp / maxXp) * 100)) + '%';
   });
 },
-  // 두 위치를 모두 갱신
-if (charMain) charMain.textContent = STAGES[stage] || '🥚';
-if (xpMain)   xpMain.textContent   = '성장치: ' + xp + ' / ' + maxXp;
-if (barMain)  barMain.style.width  = Math.min(100, Math.round((xp / maxXp) * 100)) + '%';
 
-if (charDash) charDash.textContent = STAGES[stage] || '🥚';
-if (xpDash)   xpDash.textContent   = '성장치: ' + xp + ' / ' + maxXp;
-if (barDash)  barDash.style.width  = Math.min(100, Math.round((xp / maxXp) * 100)) + '%';
 
 calcAverageOndok(){
 const results = this.userData?.testResults || {};
@@ -3118,6 +3111,7 @@ DemoAuth._listeners.forEach(cb=>cb(DemoAuth._user));
 </script>
 </body>
 </html>
+
 
 
 
